@@ -26,7 +26,7 @@
     </licenses>
 
     <artifactId>jeap-reaction-observer</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.2-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <parent>
@@ -37,17 +37,30 @@
 
     <properties>
         <maven.javadoc.skip>false</maven.javadoc.skip>
+        <jeap-messaging.version>8.31.2</jeap-messaging.version>
     </properties>
 
     <modules>
         <module>jeap-reaction-observer-core</module>
+        <module>jeap-reaction-observer-events</module>
+        <module>jeap-reaction-observer-starter</module>
     </modules>
 
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>${project.groupId}</groupId>
+                <groupId>ch.admin.bit.jeap</groupId>
                 <artifactId>jeap-reaction-observer-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.admin.bit.jeap</groupId>
+                <artifactId>jeap-reaction-observer-events</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.admin.bit.jeap</groupId>
+                <artifactId>jeap-reaction-observer-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>
