@@ -8,7 +8,6 @@ import java.util.SortedMap;
 class ObservationIds {
 
     /**
-     * The reactionId is the unique identifier of the reaction. It is formatted as "[&lt;trigger-id&gt;][#&lt;action-id&gt;]".
      * The trigger-id/action-id are the IDs of the observations for the trigger/action, and are composed as follows:
      * "&lt;type&gt;:&lt;fqn&gt;[:&lt;props_md5_hash_hexstring&gt;]". type and fqn are guaranteed to never contain a hash or colon.
      * The props_md5_hash_hexstring is the md5 hash of the string representation of the props map, with sorted keys,

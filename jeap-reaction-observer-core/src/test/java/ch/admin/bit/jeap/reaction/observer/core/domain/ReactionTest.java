@@ -13,17 +13,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class ReactionTest {
 
     @Test
-    void idReturnsActionIdWhenTriggerIsNullWithValidAction() {
-        Observation action = new Observation("type", "fqn", new TreeMap<>(Map.of("key", "value")));
-        Reaction reaction = new Reaction(null, action);
-        assertEquals("type:fqn:" + DigestUtils.md5Hex("key=value"), reaction.id());
-    }
-
-    @Test
     void idReturnsTriggerIdWhenActionIsNullWithValidTrigger() {
         Observation trigger = new Observation("type", "fqn", new TreeMap<>(Map.of("key", "value")));
         Reaction reaction = new Reaction(trigger, null);
         assertEquals("type:fqn:" + DigestUtils.md5Hex("key=value"), reaction.id());
+    }
+
+    @Test
+    void idReturnsActionIdWhenTriggerIsNullWithValidAction() {
+        Observation action = new Observation("type", "fqn", new TreeMap<>(Map.of("key", "value")));
+        Reaction reaction = new Reaction(null, action);
+        assertEquals("#type:fqn:" + DigestUtils.md5Hex("key=value"), reaction.id());
     }
 
     @Test
