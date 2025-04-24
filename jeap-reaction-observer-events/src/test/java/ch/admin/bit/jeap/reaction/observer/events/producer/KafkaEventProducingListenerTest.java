@@ -1,6 +1,5 @@
 package ch.admin.bit.jeap.reaction.observer.events.producer;
 
-import ch.admin.bit.jeap.messaging.annotations.JeapMessageProducerContract;
 import ch.admin.bit.jeap.messaging.kafka.test.KafkaIntegrationTestBase;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.Observation;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.Reaction;
@@ -18,8 +17,6 @@ import java.util.TreeMap;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-// TODO Remove producer annotation when latest messaging version has been published
-@JeapMessageProducerContract(appName = "test", topic = "reaction-identified", value = ReactionIdentifiedEvent.TypeRef.class)
 class KafkaEventProducingListenerTest extends KafkaIntegrationTestBase {
 
     @Autowired

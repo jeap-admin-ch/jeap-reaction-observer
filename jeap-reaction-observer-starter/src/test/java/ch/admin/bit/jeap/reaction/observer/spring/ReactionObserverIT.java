@@ -1,11 +1,9 @@
 package ch.admin.bit.jeap.reaction.observer.spring;
 
-import ch.admin.bit.jeap.messaging.annotations.JeapMessageProducerContract;
 import ch.admin.bit.jeap.messaging.kafka.test.KafkaIntegrationTestBase;
 import ch.admin.bit.jeap.reaction.observer.core.domain.ReactionObserverService;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.Observation;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.Reaction;
-import ch.admin.bit.jeap.reaction.observer.event.identified.ReactionIdentifiedEvent;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -17,8 +15,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 @SpringBootTest
-// TODO Remove producer annotation when latest messaging version has been published
-@JeapMessageProducerContract(appName = "test", topic = "reaction-identified", value = ReactionIdentifiedEvent.TypeRef.class)
 class ReactionObserverIT extends KafkaIntegrationTestBase {
 
     @Autowired
