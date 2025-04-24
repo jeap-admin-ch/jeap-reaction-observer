@@ -7,8 +7,9 @@ spring:
 jeap:
   reaction:
     observer:
-      kafka:
+      events:
         reaction-identified-topic: reaction-identified
+        reactions-observed-topic: reactions-observed
   messaging:
     kafka:
       error-topic-name: error
@@ -17,6 +18,7 @@ jeap:
 
 logging:
   level:
+    ch.admin.bit.jeap.reaction.observer.events: TRACE
     org: WARN
     kafka: ERROR
     state.change.logger: WARN

@@ -54,7 +54,7 @@ public class ReactionIdentifiedEventBuilder extends AvroDomainEventBuilder<React
         if (props == null) {
             props = Map.of();
         }
-        return new Observation(observation.type(), observation.fqn(), props);
+        return new Observation(observation.type().name().toLowerCase(), observation.fqn(), props);
     }
 
     @Override

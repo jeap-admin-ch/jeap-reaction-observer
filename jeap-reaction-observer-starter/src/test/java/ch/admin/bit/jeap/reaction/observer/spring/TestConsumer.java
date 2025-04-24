@@ -1,33 +1,30 @@
 package ch.admin.bit.jeap.reaction.observer.spring;
 
-import ch.admin.bit.jeap.messaging.kafka.test.TestKafkaListener;
-import ch.admin.bit.jeap.reaction.observer.core.domain.model.Reaction;
-import ch.admin.bit.jeap.reaction.observer.event.identified.ReactionIdentifiedEvent;
+import ch.admin.bit.jeap.messaging.avro.AvroMessage;
+import ch.admin.bit.jeap.messaging.avro.AvroMessageKey;
+import ch.admin.bit.jeap.reaction.observer.test.TestMessages;
+import ch.admin.bit.jme.declaration.JmeCreateDeclarationCommand;
+import ch.admin.bit.jme.declaration.JmeDeclarationCreatedEvent;
+import ch.admin.bit.jme.test.JmeSimpleTestEvent;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.awaitility.Awaitility.await;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 
 @Slf4j
+@RequiredArgsConstructor
 class TestConsumer {
 
-    private final Map<String, ReactionIdentifiedEvent> reactionIdentifiedEvents = new HashMap<>();
+    private final KafkaTemplate<AvroMessageKey, AvroMessage> kafkaTemplate;
 
-    @TestKafkaListener(topics = "reaction-identified")
-    void onReactionIdentifiedEvent(ReactionIdentifiedEvent event) {
-        log.info("Received reaction identified event: {}", event);
-        reactionIdentifiedEvents.put(event.getIdentity().getIdempotenceId(), event);
-    }
+    @KafkaListener(topics = JmeDeclarationCreatedEvent.TypeRef.DEFAULT_TOPIC)
+    void onDeclarationCreatedEvent(JmeDeclarationCreatedEvent event) {
+        if (event.getPayload().getMessage().contains("reaction")) {
+            JmeSimpleTestEvent actionEvent = TestMessages.createJmeSimpleTestEvent("test");
+            kafkaTemplate.send(JmeSimpleTestEvent.TypeRef.DEFAULT_TOPIC, actionEvent);
 
-    ReactionIdentifiedEvent awaitReactionIdentifiedEventForReaction(Reaction reaction) {
-        String key = "ri_" + reaction.id();
-        log.info("Awaiting reaction identified event with idempotence id {}", key);
-        await()
-                .atMost(Duration.ofSeconds(30))
-                .until(() -> reactionIdentifiedEvents.containsKey(key));
-        return reactionIdentifiedEvents.get(key);
+            JmeCreateDeclarationCommand commandAction = TestMessages.createJmeCreateDeclarationCommand("test");
+            kafkaTemplate.send(JmeCreateDeclarationCommand.TypeRef.DEFAULT_TOPIC, commandAction);
+        }
     }
 }

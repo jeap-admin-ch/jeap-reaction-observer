@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: test
+  main:
+    banner-mode: off
+
+jeap:
+  messaging:
+    kafka:
+      error-topic-name: error
+      system-name: test-system-name
+      service-name: test-service-name
+
+logging:
+  level:
+    ch.admin.bit.jeap.reaction.observer.events: TRACE
+    org: WARN
+    kafka: ERROR
+    state.change.logger: WARN
+    ch.admin.bit.jeap.messaging.kafka.serde.confluent.config: WARN
+    io.confluent.kafka.serializers: WARN

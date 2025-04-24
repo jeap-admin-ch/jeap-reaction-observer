@@ -2,13 +2,19 @@ package ch.admin.bit.jeap.reaction.observer.core.domain;
 
 import ch.admin.bit.jeap.reaction.observer.core.domain.listener.ReactionIdentifiedListener;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.Reaction;
+import lombok.extern.slf4j.Slf4j;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
+@Slf4j
 public class ReactionObserverService {
 
     private final ReactionIdentifiedListener reactionIdentifiedListener;
+
+    private volatile Map<String, AtomicInteger> countByReactionId = new ConcurrentHashMap<>();
     private final Set<String> identifiedReactions = ConcurrentHashMap.newKeySet();
 
     public ReactionObserverService(ReactionIdentifiedListener reactionIdentifiedListener) {
@@ -16,8 +22,33 @@ public class ReactionObserverService {
     }
 
     public void reactionObserved(Reaction reaction) {
+        log.trace("reaction observed: {}", reaction);
+
+        try {
+            identifyReaction(reaction);
+            countReaction(reaction);
+        } catch (Exception e) {
+            // Log the error but do not throw it, as this is a best-effort service that should not impact the business logic
+            log.warn("Error observing reaction: {}", reaction, e);
+        }
+    }
+
+    private void identifyReaction(Reaction reaction) {
         if (identifiedReactions.add(reaction.id())) {
+            log.trace("reaction identified: {}", reaction);
             reactionIdentifiedListener.onReactionIdentified(reaction);
         }
+    }
+
+    public Map<String, AtomicInteger> getAndClearCountByReactionId() {
+        Map<String, AtomicInteger> counts = countByReactionId;
+        countByReactionId = new ConcurrentHashMap<>();
+        return counts;
+    }
+
+    private void countReaction(Reaction reaction) {
+        countByReactionId
+                .computeIfAbsent(reaction.id(), k -> new AtomicInteger())
+                .incrementAndGet();
     }
 }

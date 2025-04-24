@@ -1,6 +1,10 @@
 package ch.admin.bit.jeap.reaction.observer.core.domain.model;
 
-public record Reaction(Observation trigger, Observation action) {
+public record Reaction(Observation trigger, Observation action, String id) {
+
+    public Reaction(Observation trigger, Observation action) {
+        this(trigger, action, createId(trigger, action));
+    }
 
     /**
      * The reactionId is the unique identifier of the reaction. It is formatted as "[&lt;trigger-id&gt;][#&lt;action-id&gt;]".
@@ -9,7 +13,7 @@ public record Reaction(Observation trigger, Observation action) {
      * The props_md5_hash_hexstring is the md5 hash of the string representation of the props map, with sorted keys,
      * built using key=value pairs, separated by ampersands (for example "key1=value1&key2=value2").
      */
-    public String id() {
+    private static String createId(Observation trigger, Observation action) {
         if (trigger == null) {
             return "#" + action.id().value();
         } else if (action == null) {

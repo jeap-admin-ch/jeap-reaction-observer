@@ -13,8 +13,8 @@ class ObservationIds {
      * The props_md5_hash_hexstring is the md5 hash of the string representation of the props map, with sorted keys,
      * built using key=value pairs, separated by ampersands (for example "key1=value1&key2=value2").
      */
-    static ObservationId create(String type, String fqn, SortedMap<String, String> props) {
-        String value = sanitize(type) + ":" + sanitize(fqn) + propsHash(props);
+    static ObservationId create(ObservationType type, String fqn, SortedMap<String, String> props) {
+        String value = sanitize(type.name().toLowerCase()) + ":" + sanitize(fqn) + propsHash(props);
         return new ObservationId(value);
     }
 
