@@ -17,7 +17,7 @@
         <dependency>
             <groupId>ch.admin.bit.jeap.messagetype.jeap</groupId>
             <artifactId>reaction-identified-event</artifactId>
-            <version>1.0.0-feature_JEAP-5481-SNAPSHOT</version>
+            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>ch.admin.bit.jeap</groupId>
