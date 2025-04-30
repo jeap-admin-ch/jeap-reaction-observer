@@ -23,21 +23,14 @@ Apache License Version 2.0
  * jeap-messaging-model - [ch.admin.bit.jeap:jeap-messaging-model](https://github.com/jeap-admin-ch/jeap-messaging/tree/main/jeap-messaging-model)
  * jeap-reaction-observer-core - [ch.admin.bit.jeap:jeap-reaction-observer-core](https://github.com/jeap-admin-ch/jeap-reaction-observer/tree/main/jeap-reaction-observer-core)
  * jeap-reaction-observer-events - [ch.admin.bit.jeap:jeap-reaction-observer-events](https://github.com/jeap-admin-ch/jeap-reaction-observer/tree/main/jeap-reaction-observer-events)
-*
-jeap-reaction-observer-messaging - [ch.admin.bit.jeap:jeap-reaction-observer-messaging](https://github.com/jeap-admin-ch/jeap-reaction-observer/tree/main/jeap-reaction-observer-messaging)
-*
-jeap-reaction-observer-test - [ch.admin.bit.jeap:jeap-reaction-observer-test](https://github.com/jeap-admin-ch/jeap-reaction-observer/tree/main/jeap-reaction-observer-test)
+ * jeap-reaction-observer-messaging - [ch.admin.bit.jeap:jeap-reaction-observer-messaging](https://github.com/jeap-admin-ch/jeap-reaction-observer/tree/main/jeap-reaction-observer-messaging)
+ * jeap-reaction-observer-test - [ch.admin.bit.jeap:jeap-reaction-observer-test](https://github.com/jeap-admin-ch/jeap-reaction-observer/tree/main/jeap-reaction-observer-test)
  * reaction-identified-event - [ch.admin.bit.jeap.messagetype.jeap:reaction-identified-event](https://github.com/jeap-admin-ch/jeap-message-type-registry/tree/main)
-*
-reactions-observed-event - [ch.admin.bit.jeap.messagetype.jeap:reactions-observed-event](https://github.com/jeap-admin-ch/jeap-message-type-registry/tree/main)
-*
-jme-create-declaration-command - [ch.admin.bit.jeap.messaging.test.messagetype.jme:jme-create-declaration-command](https://github.com/jeap-admin-ch/jeap-test-message-type-registry/tree/main)
-*
-jme-declaration-created-event - [ch.admin.bit.jeap.messaging.test.messagetype.jme:jme-declaration-created-event](https://github.com/jeap-admin-ch/jeap-test-message-type-registry/tree/main)
-*
-jme-messaging-common - [ch.admin.bit.jeap.messaging.test.messagetype.jme:jme-messaging-common](https://github.com/jeap-admin-ch/jeap-test-message-type-registry/tree/main)
-*
-jme-simple-test-event - [ch.admin.bit.jeap.messaging.test.messagetype.jme:jme-simple-test-event](https://github.com/jeap-admin-ch/jeap-test-message-type-registry/tree/main)
+ * reactions-observed-event - [ch.admin.bit.jeap.messagetype.jeap:reactions-observed-event](https://github.com/jeap-admin-ch/jeap-message-type-registry/tree/main)
+ * jme-create-declaration-command - [ch.admin.bit.jeap.messaging.test.messagetype.jme:jme-create-declaration-command](https://github.com/jeap-admin-ch/jeap-test-message-type-registry/tree/main)
+ * jme-declaration-created-event - [ch.admin.bit.jeap.messaging.test.messagetype.jme:jme-declaration-created-event](https://github.com/jeap-admin-ch/jeap-test-message-type-registry/tree/main)
+ * jme-messaging-common - [ch.admin.bit.jeap.messaging.test.messagetype.jme:jme-messaging-common](https://github.com/jeap-admin-ch/jeap-test-message-type-registry/tree/main)
+ * jme-simple-test-event - [ch.admin.bit.jeap.messaging.test.messagetype.jme:jme-simple-test-event](https://github.com/jeap-admin-ch/jeap-test-message-type-registry/tree/main)
  * AWS SDK for Java - Core - [com.amazonaws:aws-java-sdk-core](https://aws.amazon.com/sdkforjava)
  * AWS Java SDK for AWS STS - [com.amazonaws:aws-java-sdk-sts](https://aws.amazon.com/sdkforjava)
  * JMES Path Query library - [com.amazonaws:jmespath-java](https://aws.amazon.com/sdkforjava)
@@ -86,7 +79,7 @@ jme-simple-test-event - [ch.admin.bit.jeap.messaging.test.messagetype.jme:jme-si
  * Apache Commons Codec - [commons-codec:commons-codec](https://commons.apache.org/proper/commons-codec/)
  * Apache Commons Collections - [commons-collections:commons-collections](http://commons.apache.org/collections/)
  * Commons Digester - [commons-digester:commons-digester](http://commons.apache.org/digester/)
-* Apache Commons IO - [commons-io:commons-io](https://commons.apache.org/proper/commons-io/)
+ * Apache Commons IO - [commons-io:commons-io](https://commons.apache.org/proper/commons-io/)
  * Apache Commons IO - [commons-io:commons-io](https://commons.apache.org/proper/commons-io/)
  * Apache Commons Validator - [commons-validator:commons-validator](http://commons.apache.org/proper/commons-validator/)
  * utils - [io.confluent:common-utils](https://confluent.io/common-utils)
