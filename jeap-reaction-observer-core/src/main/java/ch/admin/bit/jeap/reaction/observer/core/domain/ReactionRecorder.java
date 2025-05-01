@@ -17,10 +17,10 @@ public class ReactionRecorder {
      */
     public void onAction(Observation action) {
         ReactionRecorderState state = reactionRecorderState.get();
-        Observation trigger = state.getTrigger();
+        Observation trigger = state.currentTrigger();
         Reaction reaction = new Reaction(trigger, action);
         reactionObserverService.reactionObserved(reaction);
-        state.setReactionPublished(true);
+        state.notifyReactionPublished();
     }
 
     /**
@@ -28,7 +28,7 @@ public class ReactionRecorder {
      */
     public void onTriggerStart(Observation trigger) {
         ReactionRecorderState state = reactionRecorderState.get();
-        state.setTrigger(trigger);
+        state.enterTrigger(trigger);
     }
 
     /**
@@ -36,10 +36,10 @@ public class ReactionRecorder {
      */
     public void onTriggerHandled() {
         ReactionRecorderState state = reactionRecorderState.get();
-        if (state.getTrigger() != null && !state.isReactionPublished()) {
-            Reaction reaction = new Reaction(state.getTrigger(), null);
+        if (state.currentTrigger() != null && !state.isReactionPublished()) {
+            Reaction reaction = new Reaction(state.currentTrigger(), null);
             reactionObserverService.reactionObserved(reaction);
-            state.setReactionPublished(true);
+            state.notifyReactionPublished();
         }
     }
 
@@ -47,6 +47,8 @@ public class ReactionRecorder {
      * Cleanup resources created at the start of the current trigger.
      */
     public void afterTrigger() {
-        reactionRecorderState.remove();
+        if (reactionRecorderState.get().exitTrigger()) {
+            reactionRecorderState.remove();
+        }
     }
 }

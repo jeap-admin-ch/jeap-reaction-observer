@@ -10,6 +10,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Observe reactions for events and commands consumed from / produced to kafka
+
 ## [0.1.0] - 2025-04-30
 
 ### Changed
