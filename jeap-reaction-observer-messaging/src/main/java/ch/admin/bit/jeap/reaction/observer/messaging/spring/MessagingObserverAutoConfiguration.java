@@ -4,10 +4,12 @@ import ch.admin.bit.jeap.messaging.kafka.KafkaConfiguration;
 import ch.admin.bit.jeap.reaction.observer.core.domain.ReactionRecorder;
 import ch.admin.bit.jeap.reaction.observer.messaging.ObserverKafkaMessageCallback;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 
 @AutoConfiguration(before = KafkaConfiguration.class)
+@ConditionalOnProperty(name = "jeap.reaction.observer.enabled", havingValue = "true", matchIfMissing = true)
 public class MessagingObserverAutoConfiguration {
 
     /**

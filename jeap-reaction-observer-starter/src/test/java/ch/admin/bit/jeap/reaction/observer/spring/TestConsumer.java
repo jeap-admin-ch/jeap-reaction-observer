@@ -11,11 +11,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.awaitility.Awaitility.await;
+
 @Slf4j
 @RequiredArgsConstructor
 class TestConsumer {
 
     private final KafkaTemplate<AvroMessageKey, AvroMessage> kafkaTemplate;
+    private final List<JmeDeclarationCreatedEvent> consumedEvents = new ArrayList<>();
 
     @KafkaListener(topics = JmeDeclarationCreatedEvent.TypeRef.DEFAULT_TOPIC)
     void onDeclarationCreatedEvent(JmeDeclarationCreatedEvent event) {
@@ -26,5 +32,12 @@ class TestConsumer {
             JmeCreateDeclarationCommand commandAction = TestMessages.createJmeCreateDeclarationCommand("test");
             kafkaTemplate.send(JmeCreateDeclarationCommand.TypeRef.DEFAULT_TOPIC, commandAction);
         }
+
+        consumedEvents.add(event);
+    }
+
+    void awaitDeclarationCreatedEvent(JmeDeclarationCreatedEvent event) {
+        await().until(() -> consumedEvents.stream()
+                .anyMatch(e -> e.getIdentity().getId().equals(event.getIdentity().getId())));
     }
 }

@@ -3,6 +3,7 @@ package ch.admin.bit.jeap.reaction.observer.test;
 import ch.admin.bit.jeap.messaging.kafka.test.TestKafkaListener;
 import ch.admin.bit.jeap.reaction.observer.event.identified.ReactionIdentifiedEvent;
 import ch.admin.bit.jeap.reaction.observer.event.observed.ReactionsObservedEvent;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.awaitility.Awaitility;
 
@@ -22,6 +23,7 @@ public class ReactionEventsTestConsumer {
         Awaitility.setDefaultTimeout(Duration.ofSeconds(30));
     }
 
+    @Getter
     private final Map<String, ReactionIdentifiedEvent> reactionIdentifiedEvents = new HashMap<>();
     private final List<ReactionsObservedEvent> reactionsObservedEvents = new ArrayList<>();
 

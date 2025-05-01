@@ -1,0 +1,23 @@
+{
+  "properties": [
+    {
+      "name": "jeap.reaction.observer.enabled",
+      "description": "Flag to enable/disable the jEAP Reaction Observer",
+      "defaultValue": true,
+      "type": "java.lang.Boolean"
+    }
+  ],
+  "hints": [
+    {
+      "name": "jeap.reaction.observer.enabled",
+      "values": [
+        {
+          "value": true
+        },
+        {
+          "value": false
+        }
+      ]
+    }
+  ]
+}
