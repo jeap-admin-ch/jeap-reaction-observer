@@ -37,7 +37,7 @@
 
     <properties>
         <maven.javadoc.skip>false</maven.javadoc.skip>
-        <jeap-messaging.version>8.33.0-feature-JEAP-5482-SNAPSHOT</jeap-messaging.version>
+        <jeap-messaging.version>8.36.0</jeap-messaging.version>
     </properties>
 
     <modules>
