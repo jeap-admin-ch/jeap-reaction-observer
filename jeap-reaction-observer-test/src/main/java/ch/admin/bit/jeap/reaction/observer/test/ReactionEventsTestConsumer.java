@@ -39,12 +39,17 @@ public class ReactionEventsTestConsumer {
         reactionsObservedEvents.add(event);
     }
 
-    public ReactionIdentifiedEvent awaitReactionIdentifiedEventForReaction(String reactionId) {
-        String key = "ri_" + reactionId;
-        log.info("Awaiting reaction identified event with idempotence id {}", key);
+    public ReactionIdentifiedEvent awaitReactionIdentifiedEventForReaction(String reactionIdPattern) {
+        Predicate<ReactionIdentifiedEvent> predicate = event ->
+                event.getPayload().getReactionId().matches(reactionIdPattern);
+
         await()
-                .until(() -> reactionIdentifiedEvents.containsKey(key));
-        return reactionIdentifiedEvents.get(key);
+                .until(() -> reactionIdentifiedEvents.values().stream().anyMatch(predicate));
+
+        return reactionIdentifiedEvents.values().stream()
+                .filter(predicate)
+                .findFirst()
+                .orElseThrow();
     }
 
     public List<ReactionsObservedEvent> awaitReactionsObservedEvents() {
@@ -53,10 +58,10 @@ public class ReactionEventsTestConsumer {
         return new ArrayList<>(reactionsObservedEvents);
     }
 
-    public ReactionsObservedEvent awaitReactionsObservedEventForReaction(String reactionId) {
+    public ReactionsObservedEvent awaitReactionsObservedEventForReaction(String reactionIdPattern) {
         Predicate<ReactionsObservedEvent> predicate = event ->
                 event.getPayload().getObservations().stream().anyMatch(observation ->
-                        observation.getReactionId().equals(reactionId));
+                        observation.getReactionId().matches(reactionIdPattern));
 
         await()
                 .until(() -> reactionsObservedEvents.stream().anyMatch(predicate));

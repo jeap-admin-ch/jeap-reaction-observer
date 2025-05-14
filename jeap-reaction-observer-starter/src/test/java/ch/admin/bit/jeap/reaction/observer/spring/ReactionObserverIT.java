@@ -46,9 +46,9 @@ class ReactionObserverIT extends ReactionKafkaTestBase {
         sendTestEventWithoutRecordingAction(JmeDeclarationCreatedEvent.TypeRef.DEFAULT_TOPIC, event);
 
         // Then: The reaction observer should send the reaction identified events
-        ReactionIdentifiedEvent eventReactionIdentified = reactionEventsTestConsumer.awaitReactionIdentifiedEventForReaction("event:JmeDeclarationCreatedEvent#event:JmeSimpleTestEvent");
+        ReactionIdentifiedEvent eventReactionIdentified = reactionEventsTestConsumer.awaitReactionIdentifiedEventForReaction("event:JmeDeclarationCreatedEvent:.*#event:JmeSimpleTestEvent:.*");
         assertThat(eventReactionIdentified.getPayload().getReactionId())
-                .isEqualTo("event:JmeDeclarationCreatedEvent#event:JmeSimpleTestEvent");
+                .matches("event:JmeDeclarationCreatedEvent:.*#event:JmeSimpleTestEvent:.*");
         Reaction eventReaction = (Reaction) eventReactionIdentified.getPayload().getReaction();
         assertThat(eventReaction)
                 .isNotNull()
@@ -57,10 +57,10 @@ class ReactionObserverIT extends ReactionKafkaTestBase {
                 .matches(t -> t.getAction().getType().equals("event"))
                 .matches(t -> t.getAction().getFqn().equals("JmeSimpleTestEvent"));
 
-        ReactionIdentifiedEvent commandReactionIdentified = reactionEventsTestConsumer.awaitReactionIdentifiedEventForReaction("event:JmeDeclarationCreatedEvent#command:JmeCreateDeclarationCommand");
+        ReactionIdentifiedEvent commandReactionIdentified = reactionEventsTestConsumer.awaitReactionIdentifiedEventForReaction("event:JmeDeclarationCreatedEvent:.*#command:JmeCreateDeclarationCommand:.*");
         Reaction commandReaction = (Reaction) commandReactionIdentified.getPayload().getReaction();
         assertThat(commandReactionIdentified.getPayload().getReactionId())
-                .isEqualTo("event:JmeDeclarationCreatedEvent#command:JmeCreateDeclarationCommand");
+                .matches("event:JmeDeclarationCreatedEvent:.*#command:JmeCreateDeclarationCommand:.*");
         assertThat(commandReaction)
                 .isNotNull()
                 .matches(t -> t.getTrigger().getType().equals("event"))
@@ -69,20 +69,20 @@ class ReactionObserverIT extends ReactionKafkaTestBase {
                 .matches(t -> t.getAction().getFqn().equals("JmeCreateDeclarationCommand"));
 
         // Then: The reaction observer should send the reactions observed events
-        ReactionsObservedEvent eventReactionsObserved = reactionEventsTestConsumer.awaitReactionsObservedEventForReaction("event:JmeDeclarationCreatedEvent#event:JmeSimpleTestEvent");
+        ReactionsObservedEvent eventReactionsObserved = reactionEventsTestConsumer.awaitReactionsObservedEventForReaction("event:JmeDeclarationCreatedEvent:.*#event:JmeSimpleTestEvent:.*");
         assertThat(eventReactionsObserved.getPayload().getTimeframe().getEnd())
                 .isAfter(eventReactionsObserved.getPayload().getTimeframe().getStart());
         Observation eventObservation = eventReactionsObserved.getPayload().getObservations().stream()
-                .filter(o -> o.getReactionId().equals("event:JmeDeclarationCreatedEvent#event:JmeSimpleTestEvent"))
+                .filter(o -> o.getReactionId().matches("event:JmeDeclarationCreatedEvent:.*#event:JmeSimpleTestEvent:.*"))
                 .findFirst().orElseThrow();
         assertThat(eventObservation)
                 .matches(o -> o.getCount() == 1);
 
-        ReactionsObservedEvent commandReactionsObserved = reactionEventsTestConsumer.awaitReactionsObservedEventForReaction("event:JmeDeclarationCreatedEvent#command:JmeCreateDeclarationCommand");
+        ReactionsObservedEvent commandReactionsObserved = reactionEventsTestConsumer.awaitReactionsObservedEventForReaction("event:JmeDeclarationCreatedEvent:.*#command:JmeCreateDeclarationCommand:.*");
         assertThat(commandReactionsObserved.getPayload().getTimeframe().getEnd())
                 .isAfter(commandReactionsObserved.getPayload().getTimeframe().getStart());
         Observation commandObservation = commandReactionsObserved.getPayload().getObservations().stream()
-                .filter(o -> o.getReactionId().equals("event:JmeDeclarationCreatedEvent#command:JmeCreateDeclarationCommand"))
+                .filter(o -> o.getReactionId().matches("event:JmeDeclarationCreatedEvent:.*#command:JmeCreateDeclarationCommand:.*"))
                 .findFirst().orElseThrow();
         assertThat(commandObservation)
                 .matches(o -> o.getCount() == 1);
@@ -98,22 +98,22 @@ class ReactionObserverIT extends ReactionKafkaTestBase {
         sendTestEventWithoutRecordingAction(JmeDeclarationCreatedEvent.TypeRef.DEFAULT_TOPIC, event);
 
         // Then: The reaction observer should send the reaction identified event and the reaction observed event
-        ReactionIdentifiedEvent reactionIdentifiedEvent = reactionEventsTestConsumer.awaitReactionIdentifiedEventForReaction("event:JmeDeclarationCreatedEvent");
-        ReactionsObservedEvent reactionsObservedEvent = reactionEventsTestConsumer.awaitReactionsObservedEventForReaction("event:JmeDeclarationCreatedEvent");
+        ReactionIdentifiedEvent reactionIdentifiedEvent = reactionEventsTestConsumer.awaitReactionIdentifiedEventForReaction("event:JmeDeclarationCreatedEvent:.*");
+        ReactionsObservedEvent reactionsObservedEvent = reactionEventsTestConsumer.awaitReactionsObservedEventForReaction("event:JmeDeclarationCreatedEvent:.*");
 
         TriggerOnly reaction = (TriggerOnly) reactionIdentifiedEvent.getPayload().getReaction();
         assertThat(reactionIdentifiedEvent.getPayload().getReactionId())
-                .isEqualTo("event:JmeDeclarationCreatedEvent");
+                .matches("event:JmeDeclarationCreatedEvent:.*");
         assertThat(reaction)
                 .isNotNull()
                 .matches(t -> t.getTrigger().getType().equals("event"))
                 .matches(t -> t.getTrigger().getFqn().equals("JmeDeclarationCreatedEvent"))
-                .matches(t -> t.getTrigger().getProps().isEmpty());
+                .matches(t -> t.getTrigger().getProps().containsKey("topic"));
 
         Observation observation = reactionsObservedEvent.getPayload().getObservations().getFirst();
         assertThat(observation)
                 .isNotNull()
-                .matches(o -> o.getReactionId().equals("event:JmeDeclarationCreatedEvent"))
+                .matches(o -> o.getReactionId().matches("event:JmeDeclarationCreatedEvent:.*"))
                 .matches(o -> o.getCount() == 1);
     }
 
@@ -127,22 +127,22 @@ class ReactionObserverIT extends ReactionKafkaTestBase {
         kafkaTemplate.send(JmeSimpleTestEvent.TypeRef.DEFAULT_TOPIC, event);
 
         // Then: The reaction observer should send the reaction identified event and the reaction observed event
-        ReactionIdentifiedEvent reactionIdentifiedEvent = reactionEventsTestConsumer.awaitReactionIdentifiedEventForReaction("#event:JmeSimpleTestEvent");
-        ReactionsObservedEvent reactionsObservedEvent = reactionEventsTestConsumer.awaitReactionsObservedEventForReaction("#event:JmeSimpleTestEvent");
+        ReactionIdentifiedEvent reactionIdentifiedEvent = reactionEventsTestConsumer.awaitReactionIdentifiedEventForReaction("#event:JmeSimpleTestEvent:.*");
+        ReactionsObservedEvent reactionsObservedEvent = reactionEventsTestConsumer.awaitReactionsObservedEventForReaction("#event:JmeSimpleTestEvent:.*");
 
         ActionOnly actionOnly = (ActionOnly) reactionIdentifiedEvent.getPayload().getReaction();
         assertThat(reactionIdentifiedEvent.getPayload().getReactionId())
-                .isEqualTo("#event:JmeSimpleTestEvent");
+                .matches("#event:JmeSimpleTestEvent:.*");
         assertThat(actionOnly)
                 .isNotNull()
                 .matches(a -> a.getAction().getType().equals("event"))
                 .matches(a -> a.getAction().getFqn().equals("JmeSimpleTestEvent"))
-                .matches(a -> a.getAction().getProps().isEmpty());
+                .matches(a -> a.getAction().getProps().containsKey("topic"));
 
         Observation observation = reactionsObservedEvent.getPayload().getObservations().getFirst();
         assertThat(observation)
                 .isNotNull()
-                .matches(o -> o.getReactionId().equals("#event:JmeSimpleTestEvent"))
+                .matches(o -> o.getReactionId().matches("#event:JmeSimpleTestEvent:.*"))
                 .matches(o -> o.getCount() == 1);
     }
 

@@ -56,7 +56,7 @@ class ObserverKafkaMessageCallbackTest extends ReactionKafkaTestBase {
         assertThat(eventReaction.trigger())
                 .isNotNull();
         assertThat(eventReaction.id())
-                .isEqualTo("event:JmeDeclarationCreatedEvent#event:JmeSimpleTestEvent");
+                .matches("event:JmeDeclarationCreatedEvent:.*#event:JmeSimpleTestEvent:.*");
         assertThat(eventReaction.trigger().fqn())
                 .isEqualTo("JmeDeclarationCreatedEvent");
         assertThat(eventReaction.action())
@@ -69,7 +69,7 @@ class ObserverKafkaMessageCallbackTest extends ReactionKafkaTestBase {
         assertThat(commandReaction.trigger())
                 .isNotNull();
         assertThat(commandReaction.id())
-                .isEqualTo("event:JmeDeclarationCreatedEvent#command:JmeCreateDeclarationCommand");
+                .matches("event:JmeDeclarationCreatedEvent:.*#command:JmeCreateDeclarationCommand:.*");
         assertThat(commandReaction.trigger().fqn())
                 .isEqualTo("JmeDeclarationCreatedEvent");
         assertThat(commandReaction.action())
@@ -95,13 +95,13 @@ class ObserverKafkaMessageCallbackTest extends ReactionKafkaTestBase {
         assertThat(reaction.trigger())
                 .isNotNull();
         assertThat(reaction.id())
-                .isEqualTo("event:JmeDeclarationCreatedEvent");
+                .matches("event:JmeDeclarationCreatedEvent:.*");
         assertThat(reaction.trigger().fqn())
                 .isEqualTo("JmeDeclarationCreatedEvent");
         assertThat(reaction.trigger().type())
                 .isEqualTo(ObservationType.EVENT);
         assertThat(reaction.trigger().props())
-                .isEmpty();
+                .containsEntry("topic", JmeDeclarationCreatedEvent.TypeRef.DEFAULT_TOPIC);
         assertThat(reaction.action())
                 .isNull();
     }
@@ -125,13 +125,13 @@ class ObserverKafkaMessageCallbackTest extends ReactionKafkaTestBase {
         assertThat(reaction.action())
                 .isNotNull();
         assertThat(reaction.id())
-                .isEqualTo("#event:JmeSimpleTestEvent");
+                .matches("#event:JmeSimpleTestEvent:.*");
         assertThat(reaction.action().fqn())
                 .isEqualTo("JmeSimpleTestEvent");
         assertThat(reaction.action().type())
                 .isEqualTo(ObservationType.EVENT);
         assertThat(reaction.action().props())
-                .isEmpty();
+                .containsEntry("topic", JmeSimpleTestEvent.TypeRef.DEFAULT_TOPIC);
     }
 
     @Test
@@ -153,13 +153,13 @@ class ObserverKafkaMessageCallbackTest extends ReactionKafkaTestBase {
         assertThat(reaction.action())
                 .isNotNull();
         assertThat(reaction.id())
-                .isEqualTo("#command:JmeCreateDeclarationCommand");
+                .matches("#command:JmeCreateDeclarationCommand:.*");
         assertThat(reaction.action().fqn())
                 .isEqualTo("JmeCreateDeclarationCommand");
         assertThat(reaction.action().type())
                 .isEqualTo(ObservationType.COMMAND);
         assertThat(reaction.action().props())
-                .isEmpty();
+                .containsEntry("topic", JmeCreateDeclarationCommand.TypeRef.DEFAULT_TOPIC);
     }
 
     @TestConfiguration

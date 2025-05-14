@@ -17,24 +17,24 @@ public class ObserverKafkaMessageCallback implements JeapKafkaMessageCallback {
     }
 
     @Override
-    public void onSend(Message message) {
+    public void onSend(Message message, String topicName) {
         if (filtered(message)) {
             return;
         }
-        Observation action = createObservation(message);
+        Observation action = createObservation(message, topicName);
         reactionRecorder.onAction(action);
     }
 
     @Override
-    public void beforeConsume(Message message) {
+    public void beforeConsume(Message message, String topicName) {
         if (filtered(message)) {
             return;
         }
-        reactionRecorder.onTriggerStart(createObservation(message));
+        reactionRecorder.onTriggerStart(createObservation(message, topicName));
     }
 
     @Override
-    public void afterConsume(Message message) {
+    public void afterConsume(Message message, String topicName) {
         if (filtered(message)) {
             return;
         }
@@ -42,16 +42,16 @@ public class ObserverKafkaMessageCallback implements JeapKafkaMessageCallback {
     }
 
     @Override
-    public void afterRecord(Message message) {
+    public void afterRecord(Message message, String topicName) {
         if (filtered(message)) {
             return;
         }
         reactionRecorder.afterTrigger();
     }
 
-    private Observation createObservation(Message message) {
+    private Observation createObservation(Message message, String topicName) {
         String messageType = message.getType().getName();
-        return message instanceof Command ? Observation.ofCommand(messageType) : Observation.ofEvent(messageType);
+        return message instanceof Command ? Observation.ofCommand(messageType, topicName) : Observation.ofEvent(messageType, topicName);
     }
 
     private boolean filtered(Message message) {
