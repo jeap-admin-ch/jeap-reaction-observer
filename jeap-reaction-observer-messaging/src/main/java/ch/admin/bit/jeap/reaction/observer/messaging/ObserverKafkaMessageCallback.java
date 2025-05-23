@@ -1,6 +1,7 @@
 package ch.admin.bit.jeap.reaction.observer.messaging;
 
 import ch.admin.bit.jeap.command.Command;
+import ch.admin.bit.jeap.messaging.avro.errorevent.MessageProcessingFailedEvent;
 import ch.admin.bit.jeap.messaging.kafka.interceptor.JeapKafkaMessageCallback;
 import ch.admin.bit.jeap.messaging.model.Message;
 import ch.admin.bit.jeap.reaction.observer.core.domain.ReactionRecorder;
@@ -55,6 +56,7 @@ public class ObserverKafkaMessageCallback implements JeapKafkaMessageCallback {
     }
 
     private boolean filtered(Message message) {
-        return message instanceof ReactionsObservedEvent || message instanceof ReactionIdentifiedEvent;
+        return message instanceof ReactionsObservedEvent || message instanceof ReactionIdentifiedEvent ||
+                message instanceof MessageProcessingFailedEvent;
     }
 }
