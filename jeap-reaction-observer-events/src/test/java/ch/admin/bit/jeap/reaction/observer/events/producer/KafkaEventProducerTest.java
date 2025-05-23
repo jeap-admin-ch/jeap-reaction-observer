@@ -43,6 +43,10 @@ class KafkaEventProducerTest extends KafkaIntegrationTestBase {
                 .isEqualTo(reaction.id());
         assertThat(event.getPayload().getReaction())
                 .isInstanceOf(ch.admin.bit.jeap.reaction.observer.event.identified.Reaction.class);
+        assertThat(event.getPublisher().getService())
+                .isEqualTo("test-service-name");
+        assertThat(event.getPublisher().getSystem())
+                .isEqualTo("test-system-name");
         ch.admin.bit.jeap.reaction.observer.event.identified.Reaction reactionOnEvent =
                 (ch.admin.bit.jeap.reaction.observer.event.identified.Reaction) event.getPayload().getReaction();
         assertThat(reactionOnEvent.getTrigger().getType())

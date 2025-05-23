@@ -50,6 +50,10 @@ class ReactionsObservedEventSchedulerTest extends KafkaIntegrationTestBase {
         List<ReactionsObservedEvent> events = testConsumer.awaitReactionsObservedEvents();
 
         events.forEach(event -> {
+            assertThat(event.getPublisher().getService())
+                    .isEqualTo("test-service-name");
+            assertThat(event.getPublisher().getSystem())
+                    .isEqualTo("test-system-name");
             assertThat(event.getPayload().getTimeframe().getStart())
                     .isBefore(event.getPayload().getTimeframe().getEnd());
         });

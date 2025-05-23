@@ -24,7 +24,7 @@ class ReactionsObservedEventBuilder extends AvroDomainEventBuilder<ReactionsObse
     private Timeframe timeframe;
     private List<Observation> observations;
 
-    ReactionsObservedEventBuilder(String serviceName, String systemName) {
+    ReactionsObservedEventBuilder(String systemName, String serviceName) {
         super(ReactionsObservedEvent::new);
         this.serviceName = serviceName;
         this.systemName = systemName;
