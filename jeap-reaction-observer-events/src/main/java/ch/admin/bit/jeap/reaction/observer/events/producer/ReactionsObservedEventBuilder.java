@@ -59,9 +59,9 @@ class ReactionsObservedEventBuilder extends AvroDomainEventBuilder<ReactionsObse
     }
 
     private String createIdempotenceId() {
-        return serviceName + "-" +
-                fmt(timeframe.getStart()) + "-" +
+        return fmt(timeframe.getStart()) + "-" +
                 fmt(timeframe.getEnd()) + "-" +
+                serviceName + "-" +
                 serviceInstanceIdentifier;
     }
 

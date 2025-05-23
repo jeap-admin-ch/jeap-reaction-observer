@@ -10,6 +10,7 @@ import ch.admin.bit.jeap.reaction.observer.event.identified.ReactionIdentifiedMe
 import ch.admin.bit.jeap.reaction.observer.event.observed.ReactionsObservedEvent;
 import ch.admin.bit.jeap.reaction.observer.events.spring.ReactionObserverKafkaConfigProperties;
 import com.fasterxml.uuid.Generators;
+import jakarta.annotation.PostConstruct;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import java.time.Instant;
@@ -17,6 +18,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.springframework.util.StringUtils.hasText;
 
 public class KafkaEventProducer implements ReactionIdentifiedListener {
 
@@ -30,6 +33,16 @@ public class KafkaEventProducer implements ReactionIdentifiedListener {
         this.kafkaProperties = kafkaProperties;
         this.config = config;
         this.kafkaTemplate = kafkaTemplate;
+    }
+
+    @PostConstruct
+    public void init() {
+        if (!hasText(kafkaProperties.getSystemName())) {
+            throw new IllegalArgumentException("System name is required");
+        }
+        if (!hasText(kafkaProperties.getServiceName())) {
+            throw new IllegalArgumentException("Service name is required");
+        }
     }
 
     @Override
