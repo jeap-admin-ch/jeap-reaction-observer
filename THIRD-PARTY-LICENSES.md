@@ -42,7 +42,7 @@ Apache License Version 2.0
  * Jackson-dataformat-CSV - [com.fasterxml.jackson.dataformat:jackson-dataformat-csv](https://github.com/FasterXML/jackson-dataformats-text)
  * Jackson datatype: jdk8 - [com.fasterxml.jackson.datatype:jackson-datatype-jdk8](https://github.com/FasterXML/jackson-modules-java8/jackson-datatype-jdk8)
  * jackson-module-scala - [com.fasterxml.jackson.module:jackson-module-scala_2.13](https://github.com/FasterXML/jackson-module-scala)
-* Java UUID Generator - [com.fasterxml.uuid:java-uuid-generator](https://github.com/cowtowncoder/java-uuid-generator)
+ * Java UUID Generator - [com.fasterxml.uuid:java-uuid-generator](https://github.com/cowtowncoder/java-uuid-generator)
  * Caffeine cache - [com.github.ben-manes.caffeine:caffeine](https://github.com/ben-manes/caffeine)
  * proto-google-common-protos - [com.google.api.grpc:proto-google-common-protos](https://github.com/googleapis/java-iam/proto-google-common-protos)
  * FindBugs-jsr305 - [com.google.code.findbugs:jsr305](http://findbugs.sourceforge.net/)
