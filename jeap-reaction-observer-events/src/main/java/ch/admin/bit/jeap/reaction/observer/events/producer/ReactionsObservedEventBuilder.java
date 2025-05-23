@@ -7,12 +7,16 @@ import ch.admin.bit.jeap.reaction.observer.event.observed.ReactionsObservedPaylo
 import ch.admin.bit.jeap.reaction.observer.event.observed.Timeframe;
 
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class ReactionsObservedEventBuilder extends AvroDomainEventBuilder<ReactionsObservedEventBuilder, ReactionsObservedEvent> {
+
+    private static final DateTimeFormatter IDEMPOTENCE_ID_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     private final String serviceName;
     private final String systemName;
@@ -50,12 +54,19 @@ class ReactionsObservedEventBuilder extends AvroDomainEventBuilder<ReactionsObse
     @Override
     public ReactionsObservedEvent build() {
         setPayload(new ReactionsObservedPayload(timeframe, observations));
-        idempotenceId(createIdempotenceId(timeframe, observations));
+        idempotenceId(createIdempotenceId());
         return super.build();
     }
 
-    private String createIdempotenceId(Timeframe timeframe, List<Observation> observations) {
-        return serviceName + "-" + serviceInstanceIdentifier + "-" + timeframe.getStart() + "-" + timeframe.getEnd();
+    private String createIdempotenceId() {
+        return serviceName + "-" +
+                fmt(timeframe.getStart()) + "-" +
+                fmt(timeframe.getEnd()) + "-" +
+                serviceInstanceIdentifier;
+    }
+
+    private String fmt(Instant instant) {
+        return IDEMPOTENCE_ID_FORMAT.format(instant.atZone(ZoneId.systemDefault()));
     }
 
     @Override

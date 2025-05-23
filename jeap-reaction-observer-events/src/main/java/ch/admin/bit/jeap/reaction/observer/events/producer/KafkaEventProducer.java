@@ -9,6 +9,7 @@ import ch.admin.bit.jeap.reaction.observer.event.identified.ReactionIdentifiedEv
 import ch.admin.bit.jeap.reaction.observer.event.identified.ReactionIdentifiedMessageKey;
 import ch.admin.bit.jeap.reaction.observer.event.observed.ReactionsObservedEvent;
 import ch.admin.bit.jeap.reaction.observer.events.spring.ReactionObserverKafkaConfigProperties;
+import com.fasterxml.uuid.Generators;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import java.time.Instant;
@@ -22,7 +23,7 @@ public class KafkaEventProducer implements ReactionIdentifiedListener {
     private final KafkaProperties kafkaProperties;
     private final ReactionObserverKafkaConfigProperties config;
     private final KafkaTemplate<AvroMessageKey, AvroMessage> kafkaTemplate;
-    private final UUID serviceInstanceIdentifier = UUID.randomUUID();
+    private final UUID serviceInstanceIdentifier = Generators.timeBasedEpochGenerator().generate();
 
     public KafkaEventProducer(KafkaProperties kafkaProperties, ReactionObserverKafkaConfigProperties config,
                               KafkaTemplate<AvroMessageKey, AvroMessage> kafkaTemplate) {
