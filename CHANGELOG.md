@@ -8,8 +8,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [1.1.0] - 2025-06-04
 
 ### Changed
-
 - Update parent from 5.8.1 to 5.9.0
+- update jeap-messaging.version from 8.37.0 to 8.39.0
+- SequentialInbox: Prevent parallel execution of housekeeping methods using SchedulerLock. Ensure the shedlock table exists if ShedLock is not already configured.
 
 ## [1.0.0] - 2025-05-28
 
