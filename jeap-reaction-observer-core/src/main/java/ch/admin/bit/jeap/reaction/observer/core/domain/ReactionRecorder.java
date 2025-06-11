@@ -13,14 +13,19 @@ public class ReactionRecorder {
     }
 
     /**
-     * Publish a reaction (either including the trigger if one has been recorded, or an action-only reaction).
+     * Record an action linked to the current trigger if one has been recorded, otherwise publish an action-only
+     * reaction.
      */
     public void onAction(Observation action) {
         ReactionRecorderState state = reactionRecorderState.get();
-        Observation trigger = state.currentTrigger();
-        Reaction reaction = new Reaction(trigger, action);
-        reactionObserverService.reactionObserved(reaction);
-        state.notifyReactionPublished();
+        if (state.isInsideTrigger()) {
+            // When inside a trigger, record the action as part of the reaction
+            state.recordAction(action);
+        } else {
+            // When not inside a trigger,  publish an action-only reaction
+            Reaction reaction = Reaction.actionOnly(action);
+            reactionObserverService.reactionObserved(reaction);
+        }
     }
 
     /**
@@ -32,14 +37,13 @@ public class ReactionRecorder {
     }
 
     /**
-     * Publish the current trigger unless it has already been published by an action occuring in the meantime
+     * Publish the reaction at the end of the current trigger
      */
     public void onTriggerHandled() {
         ReactionRecorderState state = reactionRecorderState.get();
-        if (state.currentTrigger() != null && !state.isReactionPublished()) {
-            Reaction reaction = new Reaction(state.currentTrigger(), null);
+        if (state.isInsideTrigger()) {
+            Reaction reaction = state.toReaction();
             reactionObserverService.reactionObserved(reaction);
-            state.notifyReactionPublished();
         }
     }
 

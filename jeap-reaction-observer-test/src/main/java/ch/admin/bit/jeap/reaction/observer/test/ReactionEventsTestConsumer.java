@@ -1,7 +1,10 @@
 package ch.admin.bit.jeap.reaction.observer.test;
 
 import ch.admin.bit.jeap.messaging.kafka.test.TestKafkaListener;
+import ch.admin.bit.jeap.reaction.observer.event.identified.v2.ActionOnly;
+import ch.admin.bit.jeap.reaction.observer.event.identified.v2.Reaction;
 import ch.admin.bit.jeap.reaction.observer.event.identified.v2.ReactionIdentifiedEvent;
+import ch.admin.bit.jeap.reaction.observer.event.identified.v2.TriggerOnly;
 import ch.admin.bit.jeap.reaction.observer.event.observed.ReactionsObservedEvent;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -39,9 +42,16 @@ public class ReactionEventsTestConsumer {
         reactionsObservedEvents.add(event);
     }
 
-    public ReactionIdentifiedEvent awaitReactionIdentifiedEventForReaction(String reactionIdPattern) {
+    public ReactionIdentifiedEvent awaitReactionIdentifiedEventForReactionId(String reactionId) {
+        log.info("Waiting for reaction identified event with reactionId: {}", reactionId);
         Predicate<ReactionIdentifiedEvent> predicate = event ->
-                event.getPayload().getReactionId().matches(reactionIdPattern);
+                switch (event.getPayload().getReaction()) {
+                    case TriggerOnly triggerOnly -> triggerOnly.getReactionId().equals(reactionId);
+                    case ActionOnly actionOnly -> actionOnly.getReactionId().equals(reactionId);
+                    case Reaction reaction -> reaction.getReactionId().equals(reactionId);
+                    default ->
+                            throw new IllegalStateException("Unexpected reaction payload type: " + event.getPayload().getReaction());
+                };
 
         await()
                 .until(() -> reactionIdentifiedEvents.values().stream().anyMatch(predicate));
@@ -58,10 +68,11 @@ public class ReactionEventsTestConsumer {
         return new ArrayList<>(reactionsObservedEvents);
     }
 
-    public ReactionsObservedEvent awaitReactionsObservedEventForReaction(String reactionIdPattern) {
+    public ReactionsObservedEvent awaitReactionsObservedEventForReactionId(String reactionId) {
+        log.info("Waiting for reactions observed event with reactionId: {}", reactionId);
         Predicate<ReactionsObservedEvent> predicate = event ->
                 event.getPayload().getObservations().stream().anyMatch(observation ->
-                        observation.getReactionId().matches(reactionIdPattern));
+                        observation.getReactionId().equals(reactionId));
 
         await()
                 .until(() -> reactionsObservedEvents.stream().anyMatch(predicate));

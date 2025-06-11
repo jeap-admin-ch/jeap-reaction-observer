@@ -2,7 +2,7 @@ package ch.admin.bit.jeap.reaction.observer.messaging;
 
 import ch.admin.bit.jeap.messaging.avro.errorevent.MessageProcessingFailedEvent;
 import ch.admin.bit.jeap.reaction.observer.core.domain.ReactionRecorder;
-import ch.admin.bit.jeap.reaction.observer.event.identified.ReactionIdentifiedEvent;
+import ch.admin.bit.jeap.reaction.observer.event.identified.v2.ReactionIdentifiedEvent;
 import ch.admin.bit.jeap.reaction.observer.event.observed.ReactionsObservedEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

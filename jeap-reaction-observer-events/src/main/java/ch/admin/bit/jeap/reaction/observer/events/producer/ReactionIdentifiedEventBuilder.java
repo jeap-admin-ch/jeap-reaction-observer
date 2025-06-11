@@ -20,9 +20,6 @@ public class ReactionIdentifiedEventBuilder extends AvroDomainEventBuilder<React
     }
 
     private void setReaction(Reaction reaction) {
-        if (reaction.action() == null && reaction.trigger() == null) {
-            throw new IllegalArgumentException("Reaction must have at least an action or a trigger");
-        }
         this.reaction = reaction;
         idempotenceId("ri_" + reaction.id());
     }
@@ -36,21 +33,33 @@ public class ReactionIdentifiedEventBuilder extends AvroDomainEventBuilder<React
     @Override
     public ReactionIdentifiedEvent build() {
         Object reactionPayload;
-        if (reaction.action() == null) {
+        if (reaction.isTriggerOnly()) {
             Observation observation = createObservation(reaction.trigger());
-            reactionPayload = new TriggerOnly(observation);
-        } else if (reaction.trigger() == null) {
-            Observation observation = createObservation(reaction.action());
-            reactionPayload = new ActionOnly(List.of(observation));
+            reactionPayload = new TriggerOnly(reaction.id(), observation);
+        } else if (reaction.isActionOnly()) {
+            Observation observation = createObservation(reaction.getSingleAction());
+            reactionPayload = new ActionOnly(reaction.id(), observation);
         } else {
-            Observation action = createObservation(reaction.action());
-            // TODO: This should include a list of actions
-            List<Observation> actions = List.of(action);
-            reactionPayload = new ch.admin.bit.jeap.reaction.observer.event.identified.v2.Reaction(
+            List<Observation> actions = createObservations(reaction.actions());
+            reactionPayload = new ch.admin.bit.jeap.reaction.observer.event.identified.v2.Reaction(reaction.id(),
                     createObservation(reaction.trigger()), actions);
         }
-        setPayload(new ReactionIdentifiedPayload(reaction.id(), reactionPayload));
+        setPayload(new ReactionIdentifiedPayload(reactionPayload));
         return super.build();
+    }
+
+    private List<Observation> createObservations(List<ch.admin.bit.jeap.reaction.observer.core.domain.model.Observation> actions) {
+        if (actions == null || actions.isEmpty()) {
+            return List.of();
+        }
+
+        if (actions.size() == 1) {
+            return List.of(createObservation(actions.getFirst()));
+        }
+
+        return actions.stream()
+                .map(this::createObservation)
+                .toList();
     }
 
     private Observation createObservation(ch.admin.bit.jeap.reaction.observer.core.domain.model.Observation observation) {
@@ -58,7 +67,7 @@ public class ReactionIdentifiedEventBuilder extends AvroDomainEventBuilder<React
         if (props == null) {
             props = Map.of();
         }
-        return new Observation(observation.type().name().toLowerCase(), observation.fqn(), props);
+        return new Observation(observation.id().value(), observation.type().name().toLowerCase(), observation.fqn(), props);
     }
 
     @Override

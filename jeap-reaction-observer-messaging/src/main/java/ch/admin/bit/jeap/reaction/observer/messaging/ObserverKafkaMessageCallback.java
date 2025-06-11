@@ -6,7 +6,7 @@ import ch.admin.bit.jeap.messaging.kafka.interceptor.JeapKafkaMessageCallback;
 import ch.admin.bit.jeap.messaging.model.Message;
 import ch.admin.bit.jeap.reaction.observer.core.domain.ReactionRecorder;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.Observation;
-import ch.admin.bit.jeap.reaction.observer.event.identified.ReactionIdentifiedEvent;
+import ch.admin.bit.jeap.reaction.observer.event.identified.v2.ReactionIdentifiedEvent;
 import ch.admin.bit.jeap.reaction.observer.event.observed.ReactionsObservedEvent;
 
 public class ObserverKafkaMessageCallback implements JeapKafkaMessageCallback {

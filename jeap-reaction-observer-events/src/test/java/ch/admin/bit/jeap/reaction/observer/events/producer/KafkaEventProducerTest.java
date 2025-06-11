@@ -15,6 +15,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -34,32 +35,32 @@ class KafkaEventProducerTest extends KafkaIntegrationTestBase {
     void testKafkaEventProducingListener() {
         Observation trigger = new Observation(ObservationType.EVENT, "com.test.MyEvent", new TreeMap<>(Map.of("key1", "value1")));
         Observation action = new Observation(ObservationType.COMMAND, "com.test.MyCommand", new TreeMap<>());
-        Reaction reaction = new Reaction(trigger, action);
+        Reaction reaction = new Reaction(trigger, List.of(action));
 
         kafkaEventProducer.onReactionIdentified(reaction);
 
-        ReactionIdentifiedEvent event = testConsumer.awaitReactionIdentifiedEventForReaction(reaction.id());
-        assertThat(event.getPayload().getReactionId())
-                .isEqualTo(reaction.id());
+        ReactionIdentifiedEvent event = testConsumer.awaitReactionIdentifiedEventForReactionId(reaction.id());
         assertThat(event.getPayload().getReaction())
-                .isInstanceOf(ch.admin.bit.jeap.reaction.observer.event.identified.Reaction.class);
+                .isInstanceOf(ch.admin.bit.jeap.reaction.observer.event.identified.v2.Reaction.class);
         assertThat(event.getPublisher().getService())
                 .isEqualTo("test-service-name");
         assertThat(event.getPublisher().getSystem())
                 .isEqualTo("test-system-name");
-        ch.admin.bit.jeap.reaction.observer.event.identified.Reaction reactionOnEvent =
-                (ch.admin.bit.jeap.reaction.observer.event.identified.Reaction) event.getPayload().getReaction();
+        ch.admin.bit.jeap.reaction.observer.event.identified.v2.Reaction reactionOnEvent =
+                (ch.admin.bit.jeap.reaction.observer.event.identified.v2.Reaction) event.getPayload().getReaction();
+        assertThat(reactionOnEvent.getReactionId())
+                .isEqualTo(reaction.id());
         assertThat(reactionOnEvent.getTrigger().getType())
                 .isEqualTo(trigger.type().name().toLowerCase());
         assertThat(reactionOnEvent.getTrigger().getFqn())
                 .isEqualTo(trigger.fqn());
         assertThat(reactionOnEvent.getTrigger().getProps())
                 .containsExactlyEntriesOf(Map.of("key1", "value1"));
-        assertThat(reactionOnEvent.getAction().getType())
+        assertThat(reactionOnEvent.getActions().getFirst().getType())
                 .isEqualTo(action.type().name().toLowerCase());
-        assertThat(reactionOnEvent.getAction().getFqn())
+        assertThat(reactionOnEvent.getActions().getFirst().getFqn())
                 .isEqualTo(action.fqn());
-        assertThat(reactionOnEvent.getAction().getProps())
+        assertThat(reactionOnEvent.getActions().getFirst().getProps())
                 .isEmpty();
     }
 

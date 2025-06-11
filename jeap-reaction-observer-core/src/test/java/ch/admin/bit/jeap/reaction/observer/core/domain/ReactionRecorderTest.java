@@ -4,13 +4,17 @@ import ch.admin.bit.jeap.reaction.observer.core.domain.model.Observation;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.ObservationType;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.Reaction;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
 
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 import static org.mockito.Mockito.*;
 
 class ReactionRecorderTest {
+
     @Test
     void onActionPublishesReactionWithTriggerAndAction() {
         ReactionObserverService reactionObserverService = mock(ReactionObserverService.class);
@@ -21,8 +25,28 @@ class ReactionRecorderTest {
 
         recorder.onTriggerStart(trigger);
         recorder.onAction(action);
+        recorder.onTriggerHandled();
+        recorder.afterTrigger();
 
-        verify(reactionObserverService, times(1)).reactionObserved(new Reaction(trigger, action));
+        verify(reactionObserverService, times(1)).reactionObserved(new Reaction(trigger, List.of(action)));
+    }
+
+    @Test
+    void onActionPublishesReactionWithTriggerAndActions() {
+        ReactionObserverService reactionObserverService = mock(ReactionObserverService.class);
+        ReactionRecorder recorder = new ReactionRecorder(reactionObserverService);
+
+        Observation trigger = new Observation(ObservationType.EVENT, "triggerFqn", new TreeMap<>(Map.of("key", "value")));
+        Observation action1 = new Observation(ObservationType.EVENT, "actionFqn1", new TreeMap<>(Map.of("key", "value")));
+        Observation action2 = new Observation(ObservationType.EVENT, "actionFqn2", new TreeMap<>(Map.of("key", "value")));
+
+        recorder.onTriggerStart(trigger);
+        recorder.onAction(action1);
+        recorder.onAction(action2);
+        recorder.onTriggerHandled();
+        recorder.afterTrigger();
+
+        verify(reactionObserverService, times(1)).reactionObserved(new Reaction(trigger, List.of(action1, action2)));
     }
 
     @Test
@@ -30,11 +54,14 @@ class ReactionRecorderTest {
         ReactionObserverService reactionObserverService = mock(ReactionObserverService.class);
         ReactionRecorder recorder = new ReactionRecorder(reactionObserverService);
 
-        Observation action = new Observation(ObservationType.EVENT, "actionFqn", new TreeMap<>(Map.of("key", "value")));
+        Observation action1 = new Observation(ObservationType.EVENT, "actionFqn1", new TreeMap<>(Map.of("key", "value")));
+        Observation action2 = new Observation(ObservationType.EVENT, "actionFqn2", new TreeMap<>(Map.of("key", "value")));
 
-        recorder.onAction(action);
+        recorder.onAction(action1);
+        recorder.onAction(action2);
 
-        verify(reactionObserverService, times(1)).reactionObserved(new Reaction(null, action));
+        verify(reactionObserverService, times(1)).reactionObserved(new Reaction(null, List.of(action1)));
+        verify(reactionObserverService, times(1)).reactionObserved(new Reaction(null, List.of(action2)));
     }
 
     @Test
@@ -46,8 +73,9 @@ class ReactionRecorderTest {
 
         recorder.onTriggerStart(trigger);
         recorder.onTriggerHandled();
+        recorder.afterTrigger();
 
-        verify(reactionObserverService, times(1)).reactionObserved(new Reaction(trigger, null));
+        verify(reactionObserverService, times(1)).reactionObserved(new Reaction(trigger, List.of()));
     }
 
     @Test
@@ -61,8 +89,9 @@ class ReactionRecorderTest {
         recorder.onTriggerStart(trigger);
         recorder.onAction(action);
         recorder.onTriggerHandled();
+        recorder.afterTrigger();
 
-        verify(reactionObserverService, times(1)).reactionObserved(new Reaction(trigger, action));
+        verify(reactionObserverService, times(1)).reactionObserved(new Reaction(trigger, List.of(action)));
         verify(reactionObserverService, never()).reactionObserved(new Reaction(trigger, null));
     }
 
@@ -76,6 +105,7 @@ class ReactionRecorderTest {
         recorder.onTriggerStart(trigger);
         recorder.afterTrigger();
         recorder.onTriggerHandled();
+        recorder.afterTrigger();
 
         verify(reactionObserverService, never()).reactionObserved(any());
     }
@@ -119,6 +149,10 @@ class ReactionRecorderTest {
         Observation outerActionAfter = new Observation(ObservationType.EVENT, "outerActionAfter", new TreeMap<>());
         Observation innerTrigger = new Observation(ObservationType.EVENT, "innerTrigger", new TreeMap<>());
         Observation innerAction = new Observation(ObservationType.EVENT, "innerAction", new TreeMap<>());
+        Observation nonTriggerAction = new Observation(ObservationType.EVENT, "nonTriggerAction", new TreeMap<>());
+
+        // Record an action outside any trigger context
+        recorder.onAction(nonTriggerAction);
 
         // Start the outer trigger, invoke the action before entering the inner trigger
         recorder.onTriggerStart(outerTrigger);
@@ -137,9 +171,14 @@ class ReactionRecorderTest {
         recorder.onTriggerHandled();
         recorder.afterTrigger();
 
+        // Record an action outside any trigger context after all triggers again
+        recorder.onAction(nonTriggerAction);
+
         // Verify the reaction observations triggered by the actions
-        verify(reactionObserverService).reactionObserved(new Reaction(outerTrigger, outerActionBefore));
-        verify(reactionObserverService).reactionObserved(new Reaction(innerTrigger, innerAction));
-        verify(reactionObserverService).reactionObserved(new Reaction(outerTrigger, outerActionAfter));
+        InOrder orderVerifier = Mockito.inOrder(reactionObserverService);
+        orderVerifier.verify(reactionObserverService).reactionObserved(new Reaction(null, List.of(nonTriggerAction)));
+        orderVerifier.verify(reactionObserverService).reactionObserved(new Reaction(innerTrigger, List.of(innerAction)));
+        orderVerifier.verify(reactionObserverService).reactionObserved(new Reaction(outerTrigger, List.of(outerActionBefore, outerActionAfter)));
+        orderVerifier.verify(reactionObserverService).reactionObserved(new Reaction(null, List.of(nonTriggerAction)));
     }
 }

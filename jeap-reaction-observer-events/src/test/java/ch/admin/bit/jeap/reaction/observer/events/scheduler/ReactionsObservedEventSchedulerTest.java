@@ -58,7 +58,7 @@ class ReactionsObservedEventSchedulerTest extends KafkaIntegrationTestBase {
                     .isBefore(event.getPayload().getTimeframe().getEnd());
         });
 
-        ReactionsObservedEvent eventForReaction = testConsumer.awaitReactionsObservedEventForReaction("reaction1");
+        ReactionsObservedEvent eventForReaction = testConsumer.awaitReactionsObservedEventForReactionId("reaction1");
         assertThat(eventForReaction.getPayload().getObservations())
                 .hasSize(1)
                 .extracting(Observation::getReactionId, Observation::getCount)

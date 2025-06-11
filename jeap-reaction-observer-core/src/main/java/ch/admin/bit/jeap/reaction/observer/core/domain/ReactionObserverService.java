@@ -22,7 +22,7 @@ public class ReactionObserverService {
     }
 
     public void reactionObserved(Reaction reaction) {
-        log.trace("reaction observed: {}", reaction);
+        log.trace("Reaction observed: {}", reaction);
 
         try {
             identifyReaction(reaction);
@@ -35,7 +35,7 @@ public class ReactionObserverService {
 
     private void identifyReaction(Reaction reaction) {
         if (identifiedReactions.add(reaction.id())) {
-            log.trace("reaction identified: {}", reaction);
+            log.trace("New reaction identified: {}", reaction);
             reactionIdentifiedListener.onReactionIdentified(reaction);
         }
     }
