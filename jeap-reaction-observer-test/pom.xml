@@ -27,7 +27,7 @@
         <dependency>
             <groupId>ch.admin.bit.jeap.messagetype.jeap</groupId>
             <artifactId>reaction-identified-event</artifactId>
-            <version>1.0.0</version>
+            <version>2.0.0-feature_JEAP-5760_multiple_actions-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>ch.admin.bit.jeap.messagetype.jeap</groupId>

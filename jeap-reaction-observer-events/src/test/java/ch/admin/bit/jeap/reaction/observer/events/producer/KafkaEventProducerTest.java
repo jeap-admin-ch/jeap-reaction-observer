@@ -5,7 +5,7 @@ import ch.admin.bit.jeap.reaction.observer.core.domain.ReactionObserverService;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.Observation;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.ObservationType;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.Reaction;
-import ch.admin.bit.jeap.reaction.observer.event.identified.ReactionIdentifiedEvent;
+import ch.admin.bit.jeap.reaction.observer.event.identified.v2.ReactionIdentifiedEvent;
 import ch.admin.bit.jeap.reaction.observer.test.ReactionEventsTestConsumer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

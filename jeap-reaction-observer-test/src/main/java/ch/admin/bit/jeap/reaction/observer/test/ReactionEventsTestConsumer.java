@@ -1,7 +1,7 @@
 package ch.admin.bit.jeap.reaction.observer.test;
 
 import ch.admin.bit.jeap.messaging.kafka.test.TestKafkaListener;
-import ch.admin.bit.jeap.reaction.observer.event.identified.ReactionIdentifiedEvent;
+import ch.admin.bit.jeap.reaction.observer.event.identified.v2.ReactionIdentifiedEvent;
 import ch.admin.bit.jeap.reaction.observer.event.observed.ReactionsObservedEvent;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;

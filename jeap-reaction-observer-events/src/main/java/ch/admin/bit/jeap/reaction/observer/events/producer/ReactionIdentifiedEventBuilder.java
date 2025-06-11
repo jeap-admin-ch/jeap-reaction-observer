@@ -2,8 +2,9 @@ package ch.admin.bit.jeap.reaction.observer.events.producer;
 
 import ch.admin.bit.jeap.domainevent.avro.AvroDomainEventBuilder;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.Reaction;
-import ch.admin.bit.jeap.reaction.observer.event.identified.*;
+import ch.admin.bit.jeap.reaction.observer.event.identified.v2.*;
 
+import java.util.List;
 import java.util.Map;
 
 public class ReactionIdentifiedEventBuilder extends AvroDomainEventBuilder<ReactionIdentifiedEventBuilder, ReactionIdentifiedEvent> {
@@ -40,10 +41,13 @@ public class ReactionIdentifiedEventBuilder extends AvroDomainEventBuilder<React
             reactionPayload = new TriggerOnly(observation);
         } else if (reaction.trigger() == null) {
             Observation observation = createObservation(reaction.action());
-            reactionPayload = new ActionOnly(observation);
+            reactionPayload = new ActionOnly(List.of(observation));
         } else {
-            reactionPayload = new ch.admin.bit.jeap.reaction.observer.event.identified.Reaction(
-                    createObservation(reaction.trigger()), createObservation(reaction.action()));
+            Observation action = createObservation(reaction.action());
+            // TODO: This should include a list of actions
+            List<Observation> actions = List.of(action);
+            reactionPayload = new ch.admin.bit.jeap.reaction.observer.event.identified.v2.Reaction(
+                    createObservation(reaction.trigger()), actions);
         }
         setPayload(new ReactionIdentifiedPayload(reaction.id(), reactionPayload));
         return super.build();
