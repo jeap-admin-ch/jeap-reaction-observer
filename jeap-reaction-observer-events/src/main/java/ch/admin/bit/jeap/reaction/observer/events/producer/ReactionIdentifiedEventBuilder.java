@@ -21,7 +21,7 @@ public class ReactionIdentifiedEventBuilder extends AvroDomainEventBuilder<React
 
     private void setReaction(Reaction reaction) {
         this.reaction = reaction;
-        idempotenceId("ri_" + reaction.id());
+        idempotenceId("ri_" + serviceName + "_" + reaction.id());
     }
 
     private ReactionIdentifiedEventBuilder(String serviceName, String systemName) {
