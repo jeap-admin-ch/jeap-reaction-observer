@@ -12,10 +12,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class ObservationIdsTest {
 
     @Test
-    void createGeneratesCorrectObservationIdForValidInputs() {
+    void createGeneratesCorrectObservationIdWithMultipleProps() {
         SortedMap<String, String> props = new TreeMap<>(Map.of("key1", "value1", "key2", "value2"));
         ObservationId result = ObservationIds.create(ObservationType.EVENT, "fqn", props);
         String expected = "event:fqn:" + DigestUtils.md5Hex("key1=value1&key2=value2");
+        assertEquals(expected, result.value());
+    }
+
+    @Test
+    void createGeneratesCorrectObservationIdWithSingleProp() {
+        SortedMap<String, String> props = new TreeMap<>(Map.of("key1", "value1"));
+        ObservationId result = ObservationIds.create(ObservationType.EVENT, "fqn", props);
+        String expected = "event:fqn:" + DigestUtils.md5Hex("key1=value1");
         assertEquals(expected, result.value());
     }
 

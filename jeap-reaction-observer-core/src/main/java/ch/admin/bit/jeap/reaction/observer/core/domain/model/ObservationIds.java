@@ -21,7 +21,7 @@ class ObservationIds {
     }
 
     /**
-     * <p>The action-id-hash is calculated as follows:
+     * <p>The id-hash of a list of actions is calculated as follows:
      * <ol>
      *     <li>All action-ids are sorted using their natural String ordering</li>
      *     <li>All action-ids are concatenated using an ampersand character</li>
@@ -43,6 +43,17 @@ class ObservationIds {
             return "";
         }
 
+        if (props.size() == 1) {
+            Map.Entry<String, String> entry = props.firstEntry();
+            return ":" + DigestUtils.md5Hex(sanitize(entry.getKey()) + "=" + sanitize(entry.getValue()));
+        }
+
+        StringBuilder concatenatedProps = concatenateSanitizedProps(props);
+
+        return ":" + DigestUtils.md5Hex(concatenatedProps.toString());
+    }
+
+    private static StringBuilder concatenateSanitizedProps(SortedMap<String, String> props) {
         StringBuilder concatenatedProps = new StringBuilder();
         boolean first = true;
         for (Map.Entry<String, String> entry : props.entrySet()) {
@@ -55,8 +66,7 @@ class ObservationIds {
                     .append("=")
                     .append(sanitize(entry.getValue()));
         }
-
-        return ":" + DigestUtils.md5Hex(concatenatedProps.toString());
+        return concatenatedProps;
     }
 
     private static String sanitize(String type) {

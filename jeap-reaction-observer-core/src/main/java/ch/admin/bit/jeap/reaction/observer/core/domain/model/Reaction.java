@@ -1,27 +1,11 @@
 package ch.admin.bit.jeap.reaction.observer.core.domain.model;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-
 import java.util.List;
 
-@EqualsAndHashCode
-@ToString
-public class Reaction {
-
-    private final Observation trigger;
-    private final List<Observation> actions;
-    private final String id;
+public record Reaction(Observation trigger, List<Observation> actions, String id) {
 
     public Reaction(Observation trigger, List<Observation> actions) {
-        if (trigger == null && (actions == null || actions.isEmpty())) {
-            throw new IllegalArgumentException("Reaction must have at least an action or a trigger");
-        }
-
-        this.trigger = trigger;
-        this.actions = actions == null ? List.of() : actions;
-
-        this.id = createId();
+        this(trigger, actions == null ? List.of() : actions, createId(actions, trigger));
     }
 
     public static Reaction actionOnly(Observation action) {
@@ -41,21 +25,9 @@ public class Reaction {
 
     public Observation getSingleAction() {
         if (!isActionOnly()) {
-            throw new IllegalStateException("cannot get single action reaction - is not action-only");
+            throw new IllegalStateException("cannot get single action reaction - reaction is not action-only");
         }
         return actions.getFirst();
-    }
-
-    public String id() {
-        return id;
-    }
-
-    public Observation trigger() {
-        return trigger;
-    }
-
-    public List<Observation> actions() {
-        return actions;
     }
 
     /**
@@ -72,15 +44,17 @@ public class Reaction {
      * </ol>
      * </p>
      */
-    private String createId() {
-        if (isActionOnly()) {
+    private static String createId(List<Observation> actions, Observation trigger) {
+        if (trigger == null && (actions == null || actions.isEmpty())) {
+            throw new IllegalArgumentException("Reaction must have at least an action or a trigger");
+        }
+
+        if (trigger == null) {
             return "#" + ObservationIds.actionIdsHash(actions);
-        } else if (isTriggerOnly()) {
+        } else if (actions == null || actions.isEmpty()) {
             return trigger.id().value();
         } else {
             return trigger.id().value() + "#" + ObservationIds.actionIdsHash(actions);
         }
     }
-
-
 }

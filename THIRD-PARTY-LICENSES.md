@@ -25,7 +25,7 @@ Apache License Version 2.0
  * ch.admin.bit.jeap:jeap-reaction-observer-events - [ch.admin.bit.jeap:jeap-reaction-observer-events](https://github.com/jeap-admin-ch/jeap-reaction-observer/tree/main/jeap-reaction-observer-events)
  * ch.admin.bit.jeap:jeap-reaction-observer-messaging - [ch.admin.bit.jeap:jeap-reaction-observer-messaging](https://github.com/jeap-admin-ch/jeap-reaction-observer/tree/main/jeap-reaction-observer-messaging)
  * ch.admin.bit.jeap:jeap-reaction-observer-test - [ch.admin.bit.jeap:jeap-reaction-observer-test](https://github.com/jeap-admin-ch/jeap-reaction-observer/tree/main/jeap-reaction-observer-test)
- * reaction-identified-event - [ch.admin.bit.jeap.messagetype.jeap:reaction-identified-event](https://github.com/jeap-admin-ch/jeap-message-type-registry/tree/main)
+ * ch.admin.bit.jeap.messagetype.jeap:reaction-identified-event - [ch.admin.bit.jeap.messagetype.jeap:reaction-identified-event](https://github.com/jeap-admin-ch/jeap-message-type-registry/tree/main)
  * reactions-observed-event - [ch.admin.bit.jeap.messagetype.jeap:reactions-observed-event](https://github.com/jeap-admin-ch/jeap-message-type-registry/tree/main)
  * jme-create-declaration-command - [ch.admin.bit.jeap.messaging.test.messagetype.jme:jme-create-declaration-command](https://github.com/jeap-admin-ch/jeap-test-message-type-registry/tree/main)
  * jme-declaration-created-event - [ch.admin.bit.jeap.messaging.test.messagetype.jme:jme-declaration-created-event](https://github.com/jeap-admin-ch/jeap-test-message-type-registry/tree/main)
