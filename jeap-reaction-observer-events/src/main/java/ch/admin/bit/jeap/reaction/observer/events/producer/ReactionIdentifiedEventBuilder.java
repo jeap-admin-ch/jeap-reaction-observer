@@ -37,6 +37,8 @@ public class ReactionIdentifiedEventBuilder extends AvroDomainEventBuilder<React
             Observation observation = createObservation(reaction.trigger());
             reactionPayload = new TriggerOnly(reaction.id(), observation);
         } else if (reaction.isActionOnly()) {
+            // For action-only reactions, a single observation is created.
+            // If there is no trigger, we cannot group several actions during the execution of the trigger.
             Observation observation = createObservation(reaction.getSingleAction());
             reactionPayload = new ActionOnly(reaction.id(), observation);
         } else {
@@ -53,6 +55,7 @@ public class ReactionIdentifiedEventBuilder extends AvroDomainEventBuilder<React
             return List.of();
         }
 
+        // Avoid creating a stream if there is only one action
         if (actions.size() == 1) {
             return List.of(createObservation(actions.getFirst()));
         }

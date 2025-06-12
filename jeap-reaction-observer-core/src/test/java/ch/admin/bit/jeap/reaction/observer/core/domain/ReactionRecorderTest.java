@@ -47,6 +47,7 @@ class ReactionRecorderTest {
         recorder.afterTrigger();
 
         verify(reactionObserverService, times(1)).reactionObserved(new Reaction(trigger, List.of(action1, action2)));
+        verifyNoMoreInteractions(reactionObserverService);
     }
 
     @Test
@@ -62,6 +63,7 @@ class ReactionRecorderTest {
 
         verify(reactionObserverService, times(1)).reactionObserved(new Reaction(null, List.of(action1)));
         verify(reactionObserverService, times(1)).reactionObserved(new Reaction(null, List.of(action2)));
+        verifyNoMoreInteractions(reactionObserverService);
     }
 
     @Test
@@ -76,23 +78,7 @@ class ReactionRecorderTest {
         recorder.afterTrigger();
 
         verify(reactionObserverService, times(1)).reactionObserved(new Reaction(trigger, List.of()));
-    }
-
-    @Test
-    void onTriggerHandledDoesNotPublishReactionIfAlreadyPublished() {
-        ReactionObserverService reactionObserverService = mock(ReactionObserverService.class);
-        ReactionRecorder recorder = new ReactionRecorder(reactionObserverService);
-
-        Observation trigger = new Observation(ObservationType.EVENT, "triggerFqn", new TreeMap<>(Map.of("key", "value")));
-        Observation action = new Observation(ObservationType.EVENT, "actionFqn", new TreeMap<>(Map.of("key", "value")));
-
-        recorder.onTriggerStart(trigger);
-        recorder.onAction(action);
-        recorder.onTriggerHandled();
-        recorder.afterTrigger();
-
-        verify(reactionObserverService, times(1)).reactionObserved(new Reaction(trigger, List.of(action)));
-        verify(reactionObserverService, never()).reactionObserved(new Reaction(trigger, null));
+        verifyNoMoreInteractions(reactionObserverService);
     }
 
     @Test
@@ -108,6 +94,7 @@ class ReactionRecorderTest {
         recorder.afterTrigger();
 
         verify(reactionObserverService, never()).reactionObserved(any());
+        verifyNoMoreInteractions(reactionObserverService);
     }
 
     @Test
@@ -137,6 +124,8 @@ class ReactionRecorderTest {
 
         // Verify that the outer trigger was published after the inner trigger
         verify(reactionObserverService).reactionObserved(new Reaction(outerTrigger, null));
+
+        verifyNoMoreInteractions(reactionObserverService);
     }
 
     @Test
@@ -180,5 +169,6 @@ class ReactionRecorderTest {
         orderVerifier.verify(reactionObserverService).reactionObserved(new Reaction(innerTrigger, List.of(innerAction)));
         orderVerifier.verify(reactionObserverService).reactionObserved(new Reaction(outerTrigger, List.of(outerActionBefore, outerActionAfter)));
         orderVerifier.verify(reactionObserverService).reactionObserved(new Reaction(null, List.of(nonTriggerAction)));
+        orderVerifier.verifyNoMoreInteractions();
     }
 }

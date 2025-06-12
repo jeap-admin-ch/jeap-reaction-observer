@@ -22,7 +22,8 @@ public class ReactionRecorder {
             // When inside a trigger, record the action as part of the reaction
             state.recordAction(action);
         } else {
-            // When not inside a trigger,  publish an action-only reaction
+            // When not inside a trigger, publish an action-only reaction
+            // If there is no trigger, we cannot group several actions during the execution of the trigger.
             Reaction reaction = Reaction.actionOnly(action);
             reactionObserverService.reactionObserved(reaction);
         }
