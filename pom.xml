@@ -27,7 +27,7 @@
 
     <artifactId>jeap-reaction-observer</artifactId>
     <name>${project.groupId}:${project.artifactId}</name>
-    <version>1.7.0-SNAPSHOT</version>
+    <version>1.7.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <parent>

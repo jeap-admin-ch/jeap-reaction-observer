@@ -77,4 +77,22 @@ class ReactionObserverServiceTest {
         Map<String, AtomicInteger> clearedCounts = service.getAndClearCountByReactionId();
         assertThat(clearedCounts).isEmpty();
     }
+
+    @Test
+    void reactionObservedDoesNotExceedMaxReactionCount() {
+        ReactionIdentifiedListener identifiedListener = mock(ReactionIdentifiedListener.class);
+        ReactionObserverService service = new ReactionObserverService(identifiedListener);
+
+        // Simulate reaching the maximum reaction count
+        for (int i = 0; i < ReactionObserverService.MAX_REACTION_COUNT + 1; i++) {
+            Reaction reaction = new Reaction(
+                    new Observation(ObservationType.EVENT, "fqn" + i, new TreeMap<>(Map.of("key", "value" + i))),
+                    null
+            );
+            service.reactionObserved(reaction);
+        }
+
+        // Verify that the listener was notified only for the first MAX_REACTION_COUNT reactions
+        verify(identifiedListener, times(ReactionObserverService.MAX_REACTION_COUNT)).onReactionIdentified(any());
+    }
 }
