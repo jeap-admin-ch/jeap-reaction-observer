@@ -155,6 +155,7 @@ Apache License Version 2.0
  * kotlinx-coroutines-core - [org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm](https://github.com/Kotlin/kotlinx.coroutines)
  * kotlinx-datetime - [org.jetbrains.kotlinx:kotlinx-datetime-jvm](https://github.com/Kotlin/kotlinx-datetime)
  * kotlinx-serialization-core - [org.jetbrains.kotlinx:kotlinx-serialization-core-jvm](https://github.com/Kotlin/kotlinx.serialization)
+ * JSpecify annotations - [org.jspecify:jspecify](http://jspecify.org/)
  * LZ4 and xxHash - [org.lz4:lz4-java](https://github.com/lz4/lz4-java)
  * Objenesis - [org.objenesis:objenesis](http://objenesis.org/objenesis)
  * org.opentest4j:opentest4j - [org.opentest4j:opentest4j](https://github.com/ota4j-team/opentest4j)
