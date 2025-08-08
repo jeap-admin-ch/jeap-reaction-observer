@@ -14,11 +14,23 @@ softwareType: library
 description:
   en:
     localisedName: jeap-reaction-observer
-    shortDescription: TODO (Max. 150 characters)
+    shortDescription: A jEAP library for tracking how microservices react to messages, enabling automated runtime behaviour analysis and documentation
     longDescription: >
-      TODO (Min. 150 characters)
+      jEAP Reaction Observer is a library that detects, tracks, and documents how microservices respond to incoming events
+      such as messages, API requests, or scheduled triggers.
+      It enables automated observation of runtime behaviour, capturing both the type and frequency of reactions across
+      distributed systems.
+      The library emits Reaction Identified Events when a new behavioural pattern is first observed, and Reactions Observed
+      Events to provide aggregated statistics over time.
+      This data forms the foundation for system behaviour documentation, helping architects and developers understand service
+      dynamics without relying on manual documentation.
+      By integrating with the jEAP ArchRepo, the Reaction Observer enriches the generated documentation with insightful
+      runtime behaviour patterns.
     features:
-      - TODO
+      - Detects and tracks reactions to messages
+      - Emits Reaction Identified Events when new behavioural patterns are first observed
+      - Emits Reactions Observed Events with aggregated reaction statistics over time
+      - Integrates with jEAP ArchRepo to enrich system architecture documentation
 legal:
   license: Apache-2.0
 maintenance:
