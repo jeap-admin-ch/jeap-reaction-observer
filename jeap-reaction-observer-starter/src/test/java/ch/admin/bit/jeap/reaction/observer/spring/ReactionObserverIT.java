@@ -131,6 +131,62 @@ class ReactionObserverIT extends ReactionKafkaTestBase {
 
     @Test
     @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
+    void reactionsObservedTwoVariants_triggerOnly_expectReactionIdentifiedAndObservedEvents() {
+        // Given: A test event that will be consumed as a trigger
+        String propsHash = DigestUtils.md5Hex("topic=" + JmeDeclarationCreatedEvent.TypeRef.DEFAULT_TOPIC);
+        String triggerId = "event:JmeDeclarationCreatedEvent:" + propsHash;
+        String triggerIdWithVariant = "event:JmeDeclarationCreatedEvent/variant1:" + propsHash;
+        //noinspection UnnecessaryLocalVariable The reaction Id has not action part, and is therefore the same as the trigger Id
+        String reactionId = triggerId;
+        //noinspection UnnecessaryLocalVariable The reaction Id has not action part, and is therefore the same as the trigger Id
+        String reactionIdWithVariant = triggerIdWithVariant;
+        JmeDeclarationCreatedEvent event = TestMessages.createJmeDeclarationCreatedEvent("test", "triggerOnly");
+        JmeDeclarationCreatedEvent eventWithVariant = TestMessages.createJmeDeclarationCreatedEventWithVariant("test", "triggerOnly", "variant1");
+
+        // When: The event is sent as byte array to avoid triggering the reaction observer for the action of sending the test event
+        sendTestEventWithoutRecordingAction(JmeDeclarationCreatedEvent.TypeRef.DEFAULT_TOPIC, event);
+
+        // Then: The reaction observer should send the reaction identified event and the reaction observed event
+        ReactionIdentifiedEvent reactionIdentifiedEvent = reactionEventsTestConsumer.awaitReactionIdentifiedEventForReactionId(reactionId);
+        ReactionsObservedEvent reactionsObservedEvent = reactionEventsTestConsumer.awaitReactionsObservedEventForReactionId(reactionId);
+
+        TriggerOnly reaction = (TriggerOnly) reactionIdentifiedEvent.getPayload().getReaction();
+        assertThat(reaction)
+                .isNotNull()
+                .matches(t -> t.getTrigger().getId().equals(triggerId))
+                .matches(t -> t.getTrigger().getType().equals("event"))
+                .matches(t -> t.getTrigger().getFqn().equals("JmeDeclarationCreatedEvent"))
+                .matches(t -> t.getTrigger().getProps().containsKey("topic"));
+
+        Observation observation = reactionsObservedEvent.getPayload().getObservations().getFirst();
+        assertThat(observation)
+                .isNotNull()
+                .matches(o -> o.getReactionId().equals(reactionId))
+                .matches(o -> o.getCount() == 1);
+
+        // When: The event is sent as byte array to avoid triggering the reaction observer for the action of sending the test event
+        sendTestEventWithoutRecordingAction(JmeDeclarationCreatedEvent.TypeRef.DEFAULT_TOPIC, eventWithVariant);
+
+        ReactionIdentifiedEvent reactionIdentifiedEventWithVariant = reactionEventsTestConsumer.awaitReactionIdentifiedEventForReactionId(reactionIdWithVariant);
+        ReactionsObservedEvent reactionsObservedEventWithVariant = reactionEventsTestConsumer.awaitReactionsObservedEventForReactionId(reactionIdWithVariant);
+
+        reaction = (TriggerOnly) reactionIdentifiedEventWithVariant.getPayload().getReaction();
+        assertThat(reaction)
+                .isNotNull()
+                .matches(t -> t.getTrigger().getId().equals(triggerIdWithVariant))
+                .matches(t -> t.getTrigger().getType().equals("event"))
+                .matches(t -> t.getTrigger().getFqn().equals("JmeDeclarationCreatedEvent/variant1"))
+                .matches(t -> t.getTrigger().getProps().containsKey("topic"));
+
+        observation = reactionsObservedEventWithVariant.getPayload().getObservations().getFirst();
+        assertThat(observation)
+                .isNotNull()
+                .matches(o -> o.getReactionId().equals(reactionIdWithVariant))
+                .matches(o -> o.getCount() == 1);
+    }
+
+    @Test
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
     void reactionObserved_actionOnly_expectReactionIdentifiedAndObservedEvents() {
         // Given: A test event that will be sent as an action
         String propsHash = DigestUtils.md5Hex("topic=" + JmeSimpleTestEvent.TypeRef.DEFAULT_TOPIC);

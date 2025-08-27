@@ -30,6 +30,26 @@ class ReactionObserverServiceTest {
     }
 
     @Test
+    void reactionObservedNotifiesListenerForDifferentVariants() {
+        ReactionIdentifiedListener identifiedListener = mock(ReactionIdentifiedListener.class);
+        ReactionObserverService service = new ReactionObserverService(identifiedListener);
+        Reaction reaction = new Reaction(
+                Observation.ofEvent("type1", "topic1"),
+                null
+        );
+        Reaction reactionOtherVariant = new Reaction(
+                Observation.ofEvent("type1", "variant1", "topic1"),
+                null
+        );
+
+        service.reactionObserved(reaction);
+        service.reactionObserved(reactionOtherVariant);
+
+        verify(identifiedListener, times(1)).onReactionIdentified(reaction);
+        verify(identifiedListener, times(1)).onReactionIdentified(reactionOtherVariant);
+    }
+
+    @Test
     void reactionObservedDoesNotNotifyListenerForDuplicateReaction() {
         ReactionIdentifiedListener identifiedListener = mock(ReactionIdentifiedListener.class);
         ReactionObserverService service = new ReactionObserverService(identifiedListener);

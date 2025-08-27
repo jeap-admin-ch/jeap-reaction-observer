@@ -52,7 +52,8 @@ public class ObserverKafkaMessageCallback implements JeapKafkaMessageCallback {
 
     private Observation createObservation(Message message, String topicName) {
         String messageType = message.getType().getName();
-        return message instanceof Command ? Observation.ofCommand(messageType, topicName) : Observation.ofEvent(messageType, topicName);
+        String variant = message.getType().getVariant();
+        return message instanceof Command ? Observation.ofCommand(messageType, variant, topicName) : Observation.ofEvent(messageType, variant, topicName);
     }
 
     private boolean filtered(Message message) {

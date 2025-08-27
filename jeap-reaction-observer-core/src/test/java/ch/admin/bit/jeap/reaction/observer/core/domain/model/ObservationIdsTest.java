@@ -56,4 +56,76 @@ class ObservationIdsTest {
         String expected = "event:fqn:" + DigestUtils.md5Hex("ke_y_=val_ue_");
         assertEquals(expected, result.value());
     }
+
+    @Test
+    void ofCommandWithVariantGeneratesCorrectObservationId() {
+        Observation result = Observation.ofCommand("MessageType", "variant1", "topicName");
+        String expectedFqn = "MessageType/variant1";
+        String expectedId = "command:" + expectedFqn + ":" + DigestUtils.md5Hex("topic=topicName");
+        assertEquals(expectedId, result.id().value());
+        assertEquals(ObservationType.COMMAND, result.type());
+        assertEquals(expectedFqn, result.fqn());
+    }
+
+    @Test
+    void ofCommandWithNullVariantGeneratesCorrectObservationId() {
+        Observation result = Observation.ofCommand("MessageType", null, "topicName");
+        String expectedFqn = "MessageType";
+        String expectedId = "command:" + expectedFqn + ":" + DigestUtils.md5Hex("topic=topicName");
+        assertEquals(expectedId, result.id().value());
+        assertEquals(ObservationType.COMMAND, result.type());
+        assertEquals(expectedFqn, result.fqn());
+    }
+
+    @Test
+    void ofCommandWithBlankVariantGeneratesCorrectObservationId() {
+        Observation result = Observation.ofCommand("MessageType", "", "topicName");
+        String expectedFqn = "MessageType";
+        String expectedId = "command:" + expectedFqn + ":" + DigestUtils.md5Hex("topic=topicName");
+        assertEquals(expectedId, result.id().value());
+        assertEquals(ObservationType.COMMAND, result.type());
+        assertEquals(expectedFqn, result.fqn());
+    }
+
+    @Test
+    void ofEventWithVariantGeneratesCorrectObservationId() {
+        Observation result = Observation.ofEvent("MessageType", "variant1", "topicName");
+        String expectedFqn = "MessageType/variant1";
+        String expectedId = "event:" + expectedFqn + ":" + DigestUtils.md5Hex("topic=topicName");
+        assertEquals(expectedId, result.id().value());
+        assertEquals(ObservationType.EVENT, result.type());
+        assertEquals(expectedFqn, result.fqn());
+    }
+
+    @Test
+    void ofEventWithNullVariantGeneratesCorrectObservationId() {
+        Observation result = Observation.ofEvent("MessageType", null, "topicName");
+        String expectedFqn = "MessageType";
+        String expectedId = "event:" + expectedFqn + ":" + DigestUtils.md5Hex("topic=topicName");
+        assertEquals(expectedId, result.id().value());
+        assertEquals(ObservationType.EVENT, result.type());
+        assertEquals(expectedFqn, result.fqn());
+    }
+
+    @Test
+    void observationSanitizesSlashesInVariant() {
+        Observation result = Observation.ofEvent("Message/Type", "variant/1", "topicName");
+        String expectedFqn = "Message/Type/variant_1";
+        String expectedId = "event:" + expectedFqn + ":" + DigestUtils.md5Hex("topic=topicName");
+        assertEquals(expectedId, result.id().value());
+        assertEquals(expectedFqn, result.fqn());
+    }
+
+    @Test
+    void observationHandlesComplexVariantScenarios() {
+        // Test with whitespace variant
+        Observation result1 = Observation.ofCommand("MessageType", "   ", "topicName");
+        String expectedFqn1 = "MessageType";
+        assertEquals(expectedFqn1, result1.fqn());
+
+        // Test with variant containing multiple slashes
+        Observation result2 = Observation.ofEvent("Message/Type", "var/i/ant", "topicName");
+        String expectedFqn2 = "Message/Type/var_i_ant";
+        assertEquals(expectedFqn2, result2.fqn());
+    }
 }
