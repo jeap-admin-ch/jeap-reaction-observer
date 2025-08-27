@@ -31,4 +31,14 @@ public class TestMessages {
                 .message(message)
                 .build();
     }
+
+    public static JmeDeclarationCreatedEvent createJmeDeclarationCreatedEventWithVariant(String serviceName, String message, String variant) {
+        return JmeDeclarationCreatedEventBuilder.create()
+                .idempotenceId(UUID.randomUUID().toString())
+                .serviceName(serviceName)
+                .message(message)
+                .variant(variant)
+                .build();
+    }
+
 }
