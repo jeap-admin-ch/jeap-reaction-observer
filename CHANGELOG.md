@@ -8,8 +8,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [4.16.0] - 2026-02-25
 
 ### Changed
-
 - Update parent from 5.17.1 to 5.18.0
+- Improved template path resolution in the annotation processor for robust, cross-platform path handling and avoids issues with illegal characters in file paths.
+- update jeap-messaging from 11.15.0 to 11.15.1
 
 ## [4.15.0] - 2026-01-27
 
