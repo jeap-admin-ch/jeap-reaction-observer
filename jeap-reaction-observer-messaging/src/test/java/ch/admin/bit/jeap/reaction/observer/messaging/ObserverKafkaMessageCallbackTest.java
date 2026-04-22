@@ -13,7 +13,6 @@ import ch.admin.bit.jme.declaration.JmeDeclarationCreatedEvent;
 import ch.admin.bit.jme.test.JmeSimpleTestEvent;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -33,12 +32,12 @@ class ObserverKafkaMessageCallbackTest extends ReactionKafkaTestBase {
 
     @MockitoBean
     private ReactionObserverService reactionObserverService;
-    @Captor
-    private ArgumentCaptor<Reaction> reactionCaptor;
 
     @Test
     @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
     void onSend_reaction() {
+        ArgumentCaptor<Reaction> reactionCaptor = ArgumentCaptor.forClass(Reaction.class);
+
         // Given: A test event that will be consumed as a trigger
         JmeDeclarationCreatedEvent event = TestMessages.createJmeDeclarationCreatedEvent("test", "reaction");
 
@@ -81,6 +80,8 @@ class ObserverKafkaMessageCallbackTest extends ReactionKafkaTestBase {
     @Test
     @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
     void onSend_triggerOnly() {
+        ArgumentCaptor<Reaction> reactionCaptor = ArgumentCaptor.forClass(Reaction.class);
+
         // Given: A test event that will be consumed as a trigger
         JmeDeclarationCreatedEvent event = TestMessages.createJmeDeclarationCreatedEvent("test", "test");
 
@@ -109,6 +110,8 @@ class ObserverKafkaMessageCallbackTest extends ReactionKafkaTestBase {
     @Test
     @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
     void onSend_actionOnly_event() {
+        ArgumentCaptor<Reaction> reactionCaptor = ArgumentCaptor.forClass(Reaction.class);
+
         // Given: A test event that will be sent as an action
         JmeSimpleTestEvent event = TestMessages.createJmeSimpleTestEvent("test");
 
@@ -137,6 +140,8 @@ class ObserverKafkaMessageCallbackTest extends ReactionKafkaTestBase {
     @Test
     @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
     void onSend_actionOnly_command() {
+        ArgumentCaptor<Reaction> reactionCaptor = ArgumentCaptor.forClass(Reaction.class);
+
         // Given: A test event that will be sent as an action
         JmeCreateDeclarationCommand command = TestMessages.createJmeCreateDeclarationCommand("test");
 

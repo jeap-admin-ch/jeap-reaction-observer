@@ -33,14 +33,12 @@
     <parent>
         <artifactId>jeap-internal-spring-boot-parent</artifactId>
         <groupId>ch.admin.bit.jeap</groupId>
-        <version>7.0.0-alpha-springboot4</version>
+        <version>7.0.3-alpha-springboot4</version>
     </parent>
 
     <properties>
         <maven.javadoc.skip>false</maven.javadoc.skip>
-        <jeap-messaging.version>13.4.0</jeap-messaging.version>
-        <commons-io.version>2.21.0</commons-io.version>
-        <commons-beanutils.version>1.11.0</commons-beanutils.version>
+        <jeap-messaging.version>14.0.1-alpha-springboot4</jeap-messaging.version>
     </properties>
 
     <modules>
@@ -87,20 +85,6 @@
                 <groupId>ch.admin.bit.jeap.messagetype.jeap</groupId>
                 <artifactId>reactions-observed-event</artifactId>
                 <version>1.0.0</version>
-            </dependency>
-            <!-- This is needed because commons-io 2.11.0  (CVE-2024-47554) is coming with spring-kafka-test 3.3.7 -->
-            <!-- this is tracked by the jEAP team -->
-            <dependency>
-                <groupId>commons-io</groupId>
-                <artifactId>commons-io</artifactId>
-                <version>${commons-io.version}</version>
-            </dependency>
-            <!-- This is needed because commons-beanutils 1.9.4 (CVE-2025-48734) is coming with spring-kafka-test 3.3.7 -->
-            <!-- this is tracked by the jEAP team -->
-            <dependency>
-                <groupId>commons-beanutils</groupId>
-                <artifactId>commons-beanutils</artifactId>
-                <version>${commons-beanutils.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
