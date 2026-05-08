@@ -27,7 +27,7 @@
 
     <artifactId>jeap-reaction-observer</artifactId>
     <name>${project.groupId}:${project.artifactId}</name>
-    <version>7.6.0-alpha-springboot4-SNAPSHOT</version>
+    <version>7.7.0-alpha-springboot4-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <parent>
@@ -38,7 +38,7 @@
 
     <properties>
         <maven.javadoc.skip>false</maven.javadoc.skip>
-        <jeap-messaging.version>14.6.0-alpha-springboot4</jeap-messaging.version>
+        <jeap-messaging.version>14.7.0-alpha-springboot4</jeap-messaging.version>
     </properties>
 
     <modules>
