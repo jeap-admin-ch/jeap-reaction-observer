@@ -37,6 +37,7 @@
     </parent>
 
     <properties>
+        <netty.version>4.1.133.Final</netty.version>
         <maven.javadoc.skip>false</maven.javadoc.skip>
         <jeap-messaging.version>13.8.0</jeap-messaging.version>
         <commons-io.version>2.21.0</commons-io.version>
@@ -53,6 +54,14 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- BOM imports to pin transitive vulnerable libraries -->
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>${netty.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>ch.admin.bit.jeap</groupId>
                 <artifactId>jeap-reaction-observer-core</artifactId>
