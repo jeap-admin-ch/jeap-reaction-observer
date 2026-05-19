@@ -10,7 +10,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 - Update parent from 6.0.4 to 6.0.5
 - Pin Netty version to 4.1.133.Final to address CVE-2026-42583
-- added second argument to TraceBridge.getSpan to allow to pass in the spanName and have more meaningful traces
 - update jeap-messaging from 13.8.0 to 13.9.0
 
 ## [6.8.0] - 2026-05-06
