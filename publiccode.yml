@@ -1,7 +1,7 @@
 publiccodeYmlVersion: 0.4.0
 name: jeap-reaction-observer
 applicationSuite: jEAP
-softwareVersion: 8.2.1
+softwareVersion: 8.3.0
 releaseDate: 2026-06-03
 url: "https://github.com/jeap-admin-ch/jeap-reaction-observer.git"
 landingURL: "https://github.com/jeap-admin-ch/jeap"
