@@ -37,7 +37,7 @@
     </parent>
 
     <properties>
-        <netty.version>4.1.133.Final</netty.version>
+        <netty.version>4.1.135.Final</netty.version>
         <maven.javadoc.skip>false</maven.javadoc.skip>
         <jeap-messaging.version>13.9.2</jeap-messaging.version>
         <commons-io.version>2.21.0</commons-io.version>
