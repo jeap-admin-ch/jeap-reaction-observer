@@ -48,7 +48,7 @@ Apache License Version 2.0
  * Jackson datatype: jdk8 - [com.fasterxml.jackson.datatype:jackson-datatype-jdk8](https://github.com/FasterXML/jackson-modules-java8/jackson-datatype-jdk8)
  * Java UUID Generator - [com.fasterxml.uuid:java-uuid-generator](https://github.com/cowtowncoder/java-uuid-generator)
  * Caffeine cache - [com.github.ben-manes.caffeine:caffeine](https://github.com/ben-manes/caffeine)
- * proto-google-common-protos - [com.google.api.grpc:proto-google-common-protos](https://github.com/googleapis/java-iam/proto-google-common-protos)
+ * proto-google-common-protos - [com.google.api.grpc:proto-google-common-protos](https://github.com/googleapis/sdk-platform-java)
  * FindBugs-jsr305 - [com.google.code.findbugs:jsr305](http://findbugs.sourceforge.net/)
  * Gson - [com.google.code.gson:gson](https://github.com/google/gson)
  * error-prone annotations - [com.google.errorprone:error_prone_annotations](https://errorprone.info/error_prone_annotations)
@@ -94,9 +94,9 @@ Apache License Version 2.0
  * Apache Commons Lang - [org.apache.commons:commons-lang3](https://commons.apache.org/proper/commons-lang/)
  * Apache HttpClient - [org.apache.httpcomponents:httpclient](http://hc.apache.org/httpcomponents-client)
  * Apache HttpCore - [org.apache.httpcomponents:httpcore](http://hc.apache.org/httpcomponents-core-ga)
- * Apache HttpClient - [org.apache.httpcomponents.client5:httpclient5](https://hc.apache.org/httpcomponents-client-5.5.x/5.5.2/httpclient5/)
- * Apache HttpComponents Core HTTP/1.1 - [org.apache.httpcomponents.core5:httpcore5](https://hc.apache.org/httpcomponents-core-5.3.x/5.3.6/httpcore5/)
- * Apache HttpComponents Core HTTP/2 - [org.apache.httpcomponents.core5:httpcore5-h2](https://hc.apache.org/httpcomponents-core-5.3.x/5.3.6/httpcore5-h2/)
+ * Apache HttpClient - [org.apache.httpcomponents.client5:httpclient5](https://hc.apache.org/httpcomponents-client-5.5.x/5.6.1/httpclient5/)
+ * Apache HttpComponents Core HTTP/1.1 - [org.apache.httpcomponents.core5:httpcore5](https://hc.apache.org/httpcomponents-core-5.4.x/5.4.2/httpcore5/)
+ * Apache HttpComponents Core HTTP/2 - [org.apache.httpcomponents.core5:httpcore5-h2](https://hc.apache.org/httpcomponents-core-5.4.x/5.4.2/httpcore5-h2/)
  * Apache Kafka - [org.apache.kafka:kafka-clients](https://kafka.apache.org)
  * Apache Kafka - [org.apache.kafka:kafka-coordinator-common](https://kafka.apache.org)
  * Apache Kafka - [org.apache.kafka:kafka-group-coordinator](https://kafka.apache.org)
@@ -154,14 +154,10 @@ Apache License Version 2.0
  * Spring Messaging - [org.springframework:spring-messaging](https://github.com/spring-projects/spring-framework)
  * Spring TestContext Framework - [org.springframework:spring-test](https://github.com/spring-projects/spring-framework)
  * Spring Transaction - [org.springframework:spring-tx](https://github.com/spring-projects/spring-framework)
- * Spring Web - [org.springframework:spring-web](https://github.com/spring-projects/spring-framework)
  * spring-boot - [org.springframework.boot:spring-boot](https://spring.io/projects/spring-boot)
  * spring-boot-autoconfigure - [org.springframework.boot:spring-boot-autoconfigure](https://spring.io/projects/spring-boot)
- * spring-boot-http-client - [org.springframework.boot:spring-boot-http-client](https://spring.io/projects/spring-boot)
- * spring-boot-http-converter - [org.springframework.boot:spring-boot-http-converter](https://spring.io/projects/spring-boot)
  * spring-boot-kafka - [org.springframework.boot:spring-boot-kafka](https://spring.io/projects/spring-boot)
  * spring-boot-persistence - [org.springframework.boot:spring-boot-persistence](https://spring.io/projects/spring-boot)
- * spring-boot-restclient - [org.springframework.boot:spring-boot-restclient](https://spring.io/projects/spring-boot)
  * spring-boot-starter - [org.springframework.boot:spring-boot-starter](https://spring.io/projects/spring-boot)
  * spring-boot-starter-kafka - [org.springframework.boot:spring-boot-starter-kafka](https://spring.io/projects/spring-boot)
  * spring-boot-starter-logging - [org.springframework.boot:spring-boot-starter-logging](https://spring.io/projects/spring-boot)
@@ -266,6 +262,11 @@ GNU General Public License, version 2 (GPL2), with the classpath exception
 -------------------------------
 
  * Jakarta Annotations API - [jakarta.annotation:jakarta.annotation-api](https://projects.eclipse.org/projects/ee4j.ca)
+
+GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1
+-------------------------------
+
+ * SpotBugs Annotations - [com.github.spotbugs:spotbugs-annotations](https://spotbugs.github.io/)
 
 Go License
 -------------------------------
