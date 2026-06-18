@@ -7,6 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 > - Spring Boot 3 maintenance (bug fixes, patches, and regular updates) continues on branch `release/springboot3`.
 
+## [8.10.0] - 2026-06-18
+### Changed
+- update jeap-messaging from 15.9.0 to 15.10.0
+- refactor the upload artifact in the avro maven plugin to ignore errors if the artifact is already present in the repository
+
 ## [8.9.0] - 2026-06-18
 
 ### Changed
