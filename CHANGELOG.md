@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [8.12.1] - 2026-06-25
+### Changed
+- update jeap-messaging from 15.12.0 to 15.12.1
+- Shorten common lib snapshot versions in the avro maven plugin: the snapshot version is now the timestamp-based version followed by `-SNAPSHOT` (`<timestamp-version>-SNAPSHOT`) instead of embedding the branch name
+- Stop generating the additional classifier artifact for common (`*-messaging-common`) types in the avro maven plugin,
+  as they only ever exist in a single version and are consumed without a classifier
+
 ## [8.12.0] - 2026-06-23
 
 ### Changed
