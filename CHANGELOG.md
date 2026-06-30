@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [8.13.0] - 2026-06-30
+
+### Changed
+
+- Update parent from 8.3.3 to 8.3.4
+
 ## [8.12.1] - 2026-06-25
 ### Changed
 - update jeap-messaging from 15.12.0 to 15.12.1
