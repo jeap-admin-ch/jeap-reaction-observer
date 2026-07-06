@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [8.13.2] - 2026-07-06
+### Changed
+- update jeap-messaging from 15.13.1 to 15.13.2
+- update jeap-crypto from 9.11.1 to 9.11.2
+- update jeap-spring-boot-vault-starter from 23.10.1 to 23.10.2
+- Fix deprecated `@Valid` container annotation on `authServers` in `ResourceServerProperties` (Hibernate Validator warning HV000271)
+
 ## [8.13.1] - 2026-07-01
 ### Changed
 - update jeap-messaging from 15.13.0 to 15.13.1
