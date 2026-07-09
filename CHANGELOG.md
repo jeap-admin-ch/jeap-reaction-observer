@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [8.16.0] - 2026-07-09
+### Changed
+- update jeap-messaging from 15.15.0 to 15.16.0
+- update jeap-crypto from 9.12.0 to 9.13.0
+- update jeap-spring-boot-vault-starter from 23.11.0 to 23.12.0
+- Add OIDC Authorization mock server.
+
 ## [8.15.0] - 2026-07-09
 ### Changed
 - update jeap-messaging from 15.14.0 to 15.15.0
