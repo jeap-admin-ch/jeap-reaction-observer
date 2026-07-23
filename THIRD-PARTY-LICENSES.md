@@ -100,7 +100,7 @@ Apache License Version 2.0
  * Apache Commons Collections - [org.apache.commons:commons-collections4](https://commons.apache.org/proper/commons-collections/)
  * Apache Commons Compress - [org.apache.commons:commons-compress](https://commons.apache.org/proper/commons-compress/)
  * Apache Commons Lang - [org.apache.commons:commons-lang3](https://commons.apache.org/proper/commons-lang/)
- * Apache HttpClient - [org.apache.httpcomponents:httpclient](http://hc.apache.org/httpcomponents-client)
+ * Apache HttpClient - [org.apache.httpcomponents:httpclient](http://hc.apache.org/httpcomponents-client-ga)
  * Apache HttpCore - [org.apache.httpcomponents:httpcore](http://hc.apache.org/httpcomponents-core-ga)
  * Apache HttpClient - [org.apache.httpcomponents.client5:httpclient5](https://hc.apache.org/httpcomponents-client-5.5.x/5.5.2/httpclient5/)
  * Apache HttpComponents Core HTTP/1.1 - [org.apache.httpcomponents.core5:httpcore5](https://hc.apache.org/httpcomponents-core-5.3.x/5.3.6/httpcore5/)
