@@ -47,7 +47,7 @@ Apache License Version 2.0
  * Jackson datatype: jdk8 - [com.fasterxml.jackson.datatype:jackson-datatype-jdk8](https://github.com/FasterXML/jackson-modules-java8/jackson-datatype-jdk8)
  * Java UUID Generator - [com.fasterxml.uuid:java-uuid-generator](https://github.com/cowtowncoder/java-uuid-generator)
  * Caffeine cache - [com.github.ben-manes.caffeine:caffeine](https://github.com/ben-manes/caffeine)
- * proto-google-common-protos - [com.google.api.grpc:proto-google-common-protos](https://github.com/googleapis/sdk-platform-java)
+ * proto-google-common-protos - [com.google.api.grpc:proto-google-common-protos](https://github.com/googleapis/java-iam/proto-google-common-protos)
  * FindBugs-jsr305 - [com.google.code.findbugs:jsr305](http://findbugs.sourceforge.net/)
  * Gson - [com.google.code.gson:gson](https://github.com/google/gson)
  * error-prone annotations - [com.google.errorprone:error_prone_annotations](https://errorprone.info/error_prone_annotations)
@@ -75,8 +75,8 @@ Apache License Version 2.0
  * kafka-schema-types - [io.confluent:kafka-schema-types](http://confluent.io/kafka-schema-types)
  * Log Redactor - [io.confluent:logredactor](https://github.com/confluentinc/logredactor)
  * Log Redactor Metrics - [io.confluent:logredactor-metrics](https://github.com/confluentinc/logredactor)
- * micrometer-commons - [io.micrometer:micrometer-commons](https://github.com/micrometer-metrics/micrometer)
- * micrometer-observation - [io.micrometer:micrometer-observation](https://github.com/micrometer-metrics/micrometer)
+ * micrometer-commons - [io.micrometer:micrometer-commons](https://github.com/micrometer-metrics/micrometer-commercial)
+ * micrometer-observation - [io.micrometer:micrometer-observation](https://github.com/micrometer-metrics/micrometer-commercial)
  * Jakarta Validation API - [jakarta.validation:jakarta.validation-api](https://beanvalidation.org)
  * Joda-Time - [joda-time:joda-time](https://www.joda.org/joda-time/)
  * Byte Buddy (without dependencies) - [net.bytebuddy:byte-buddy](https://bytebuddy.net/byte-buddy)
@@ -90,7 +90,7 @@ Apache License Version 2.0
  * Apache Commons Lang - [org.apache.commons:commons-lang3](https://commons.apache.org/proper/commons-lang/)
  * Apache HttpClient - [org.apache.httpcomponents:httpclient](http://hc.apache.org/httpcomponents-client)
  * Apache HttpCore - [org.apache.httpcomponents:httpcore](http://hc.apache.org/httpcomponents-core-ga)
- * Apache HttpClient - [org.apache.httpcomponents.client5:httpclient5](https://hc.apache.org/httpcomponents-client-5.5.x/5.6.1/httpclient5/)
+ * Apache HttpClient - [org.apache.httpcomponents.client5:httpclient5](https://hc.apache.org/httpcomponents-client-5.6.x/5.6.4/httpclient5/)
  * Apache HttpComponents Core HTTP/1.1 - [org.apache.httpcomponents.core5:httpcore5](https://hc.apache.org/httpcomponents-core-5.4.x/5.4.3/httpcore5/)
  * Apache HttpComponents Core HTTP/2 - [org.apache.httpcomponents.core5:httpcore5-h2](https://hc.apache.org/httpcomponents-core-5.4.x/5.4.3/httpcore5-h2/)
  * Apache Kafka - [org.apache.kafka:kafka-clients](https://kafka.apache.org)
@@ -128,7 +128,7 @@ Apache License Version 2.0
  * Kotlin Stdlib Jdk7 - [org.jetbrains.kotlin:kotlin-stdlib-jdk7](https://kotlinlang.org/)
  * Kotlin Stdlib Jdk8 - [org.jetbrains.kotlin:kotlin-stdlib-jdk8](https://kotlinlang.org/)
  * kotlinx-serialization-core - [org.jetbrains.kotlinx:kotlinx-serialization-core-jvm](https://github.com/Kotlin/kotlinx.serialization)
- * JSpecify annotations - [org.jspecify:jspecify](http://jspecify.org/)
+ * JSpecify annotations - [org.jspecify:jspecify](https://jspecify.dev/)
  * Objenesis - [org.objenesis:objenesis](http://objenesis.org/objenesis)
  * org.opentest4j:opentest4j - [org.opentest4j:opentest4j](https://github.com/ota4j-team/opentest4j)
  * Reflections - [org.reflections:reflections](http://github.com/ronmamo/reflections)
@@ -251,11 +251,6 @@ GNU General Public License, version 2 (GPL2), with the classpath exception
 -------------------------------
 
  * Jakarta Annotations API - [jakarta.annotation:jakarta.annotation-api](https://projects.eclipse.org/projects/ee4j.ca)
-
-GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1
--------------------------------
-
- * SpotBugs Annotations - [com.github.spotbugs:spotbugs-annotations](https://spotbugs.github.io/)
 
 Go License
 -------------------------------
