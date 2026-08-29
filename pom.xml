@@ -38,7 +38,7 @@
 
     <properties>
         <maven.javadoc.skip>false</maven.javadoc.skip>
-        <jeap-messaging.version>18.4.3</jeap-messaging.version>
+        <jeap-messaging.version>18.5.0</jeap-messaging.version>
     </properties>
 
     <modules>
