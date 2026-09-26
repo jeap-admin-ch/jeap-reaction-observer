@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [11.9.0] - 2026-09-26
+
+### Changed
+
+- Update parent from 11.0.0 to 11.1.0
+
 ## [11.8.0] - 2026-09-24
 ### Changed
 - update jeap-messaging from 19.7.0 to 19.8.0
