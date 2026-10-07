@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [11.15.0] - 2026-10-07
+### Changed
+- update jeap-messaging from 19.14.0 to 19.15.0
+- Generate and upload Avro schemas with message contracts without executing message classes, avoiding registry access in the Message Contract Service. Schema generation and upload can be disabled independently.
+
 ## [11.14.0] - 2026-10-05
 ### Changed
 - update jeap-messaging from 19.13.0 to 19.14.0
