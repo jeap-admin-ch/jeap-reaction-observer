@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [11.15.2] - 2026-10-08
+### Changed
+- update jeap-messaging from 19.15.1 to 19.15.2
+- Removed the duplicated processing round cleanup in the contract annotation processors without changing their behaviour.
+
 ## [11.15.1] - 2026-10-08
 ### Changed
 - update jeap-messaging from 19.15.0 to 19.15.1
