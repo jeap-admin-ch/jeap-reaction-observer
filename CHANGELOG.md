@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [11.17.1] - 2026-10-14
+### Changed
+- update jeap-messaging from 19.17.0 to 19.17.1
+- Consolidate error-handling documentation and configuration, preserve consumer safety guidance, and link service setup to the EHS documentation.
+
 ## [11.17.0] - 2026-10-13
 
 ### Changed
