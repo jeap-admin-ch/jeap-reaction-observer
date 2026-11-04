@@ -24,6 +24,7 @@ Start with [Getting started](docs/getting-started.md), then follow the links bel
 | How it works (triggers, actions, reactions, observed events) | [docs/how-it-works.md](docs/how-it-works.md)               |
 | Configuration reference (`jeap.reaction.observer.*`)        | [docs/configuration.md](docs/configuration.md)             |
 | System behaviour documentation (the bigger picture)         | [docs/system-behaviour-documentation.md](docs/system-behaviour-documentation.md) |
+| Response header (`JEAP-REACTION-OBSERVATION`, operation naming and mapping versions, delivered to every service by the jEAP parent) | [docs/response-header.md](docs/response-header.md) |
 
 ## Modules
 
@@ -37,6 +38,7 @@ modules is `ch.admin.bit.jeap`; the version is managed by the jEAP Spring Boot p
 | `jeap-reaction-observer-events`   | Builds and publishes the `ReactionIdentifiedEvent` / `ReactionsObservedEvent` Kafka events, plus the scheduler |
 | `jeap-reaction-observer-starter`  | Spring Boot auto-configuration; the main consumer-facing artifact                                |
 | `jeap-reaction-observer-test`     | Test fixtures (`ReactionKafkaTestBase`, test event builders, consumers)                          |
+| `jeap-reaction-observer-header-starter` | Sets the `JEAP-REACTION-OBSERVATION` response header; no dependency on jEAP Messaging, Kafka or the other modules, delivered to every service by the jEAP Spring Boot parent - see [docs/response-header.md](docs/response-header.md) |
 
 ## Changes
 

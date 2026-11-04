@@ -1,0 +1,23 @@
+{
+  "properties": [
+    {
+      "name": "jeap.reaction.observer.header.enabled",
+      "description": "Emergency kill switch for the JEAP-REACTION-OBSERVATION response header. Independent of jeap.reaction.observer.enabled: meant for an emergency in the request path, not for normal operation.",
+      "defaultValue": true,
+      "type": "java.lang.Boolean"
+    }
+  ],
+  "hints": [
+    {
+      "name": "jeap.reaction.observer.header.enabled",
+      "values": [
+        {
+          "value": true
+        },
+        {
+          "value": false
+        }
+      ]
+    }
+  ]
+}

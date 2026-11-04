@@ -21,12 +21,15 @@ jeap-reaction-observer-messaging/    # ObserverKafkaMessageCallback: JeapKafkaMe
 jeap-reaction-observer-events/       # Event builders, KafkaEventProducer, ReactionsObservedEventScheduler, config properties
 jeap-reaction-observer-starter/      # @AutoConfiguration wiring; main consumer-facing artifact
 jeap-reaction-observer-test/         # Test fixtures (ReactionKafkaTestBase, test event builders, consumers)
+jeap-reaction-observer-header-starter/ # Standalone JEAP-REACTION-OBSERVATION response-header starter
 Jenkinsfile, publiccode.yml, CHANGELOG.md, LICENSE
 ```
 
 Dependency direction: `core` ← `messaging` / `events` ← `starter`. The `messaging` module bridges
 jEAP Messaging's `JeapKafkaMessageCallback` to the `core` recorder; the `events` module turns
 recorded reactions into Avro Kafka events (`reaction-identified-event`, `reactions-observed-event`).
+The `header-starter` module is independent: it must not depend on the other modules, jEAP Messaging,
+Kafka or Avro (enforced by a Maven Enforcer rule), as it is meant to be added to every jEAP service.
 
 ## Build & test
 

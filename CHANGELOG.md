@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [11.31.0] - 2026-11-05
+
+### Added
+- New standalone `jeap-reaction-observer-header-starter` module setting the `JEAP-REACTION-OBSERVATION`
+  response header on requests carrying `JEAP-REACTION-MODEL-VERSION`, see [docs/response-header.md](docs/response-header.md)
+  (long operation names are shortened with a SHA-256 suffix)
 
 ## [11.30.0] - 2026-11-04
 ### Changed

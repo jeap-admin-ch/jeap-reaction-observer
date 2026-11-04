@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: test-app
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

@@ -12,6 +12,7 @@ working [jEAP Messaging](https://github.com/jeap-admin-ch/jeap-messaging) config
 | `jeap.reaction.observer.events.reaction-identified-topic` | —   | Kafka topic for `ReactionIdentifiedEvent` messages. Required when the observer is enabled                                    |
 | `jeap.reaction.observer.events.reactions-observed-topic`  | —   | Kafka topic for `ReactionsObservedEvent` messages. Required when the observer is enabled                                     |
 | `jeap.reaction.observer.events.observed-event-rate-seconds` | `300` | Interval (seconds) at which aggregated `ReactionsObservedEvent` messages are published. A value `<= 0` disables the scheduler |
+| `jeap.reaction.observer.header.enabled` | `true` | Kill switch for the `JEAP-REACTION-OBSERVATION` response header only (`jeap-reaction-observer-header-starter`). Independent of `jeap.reaction.observer.enabled`. See [Response header](response-header.md) |
 
 When `jeap.reaction.observer.enabled` is `true`, both topic properties must be set or the application
 fails to start with an `IllegalArgumentException` naming the missing property.
@@ -39,3 +40,4 @@ classes, so disabling it removes the observer entirely.
 
 - [Getting started](getting-started.md)
 - [How it works](how-it-works.md)
+- [Response header](response-header.md)

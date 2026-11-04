@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>ch.admin.bit.jeap</groupId>
+        <artifactId>jeap-reaction-observer</artifactId>
+        <version>11.31.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>jeap-reaction-observer-header-starter</artifactId>
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>
+        Sets the JEAP-REACTION-OBSERVATION response header on every request carrying a
+        JEAP-REACTION-MODEL-VERSION header. Deliberately independent of jEAP Messaging, Kafka and the other
+        jeap-reaction-observer modules so it can be pulled into every jEAP service by the jEAP parent, even
+        services that do not use the Reaction Observer library itself.
+    </description>
+    <packaging>jar</packaging>
+
+    <dependencies>
+        <!-- Web/servlet dependencies are optional: this starter is added to every service, and must not put
+             Servlet/Spring MVC on the classpath of non-web services (that would make Boot start them as servlet apps). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+        <!-- Boot 4 split BasicErrorController out of spring-boot-autoconfigure into this module. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-webmvc</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Boot 4 split TestRestTemplate out of spring-boot-test into this module. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-resttestclient</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- TestRestTemplateTestAutoConfiguration needs RestTemplateBuilder from this module. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-restclient</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Keep this module free of jEAP Messaging/Kafka/Avro and of the other jeap-reaction-observer
+                 modules: it must stay usable by every service, including services without the library. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>ban-reaction-observer-and-messaging-dependencies</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <exclude>ch.admin.bit.jeap:jeap-reaction-observer-core</exclude>
+                                        <exclude>ch.admin.bit.jeap:jeap-reaction-observer-events</exclude>
+                                        <exclude>ch.admin.bit.jeap:jeap-reaction-observer-messaging</exclude>
+                                        <exclude>ch.admin.bit.jeap:jeap-reaction-observer-starter</exclude>
+                                        <exclude>ch.admin.bit.jeap:jeap-reaction-observer-test</exclude>
+                                        <exclude>ch.admin.bit.jeap:jeap-messaging*</exclude>
+                                        <exclude>org.apache.kafka:*</exclude>
+                                        <exclude>org.springframework.kafka:*</exclude>
+                                        <exclude>org.apache.avro:*</exclude>
+                                    </excludes>
+                                    <searchTransitive>true</searchTransitive>
+                                </bannedDependencies>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
