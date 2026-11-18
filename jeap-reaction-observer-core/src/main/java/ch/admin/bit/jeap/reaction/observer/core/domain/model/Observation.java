@@ -24,6 +24,15 @@ public record Observation(ObservationId id, ObservationType type,
         return ofEvent(messageType, null, topicName);
     }
 
+    /**
+     * An HTTP request, named by its fqn "&lt;provider&gt; &lt;METHOD&gt; &lt;path pattern&gt;", for example
+     * "partner-service GET /api/partners/{}". Everything that identifies the request is part of the fqn, the
+     * props are empty.
+     */
+    public static Observation ofHttpRequest(String fqn) {
+        return new Observation(ObservationType.HTTP_REQUEST, fqn, new TreeMap<>());
+    }
+
     private static TreeMap<String, String> topicProps(String topicName) {
         return new TreeMap<>(Map.of("topic", topicName));
     }

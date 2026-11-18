@@ -14,8 +14,9 @@ reactions to incoming messages are observed and published. For what the library 
 </dependency>
 ```
 
-The version is managed by the jEAP Spring Boot parent. The starter pulls in the `messaging` and
-`events` modules and registers the Spring Boot auto-configuration. The library is enabled by default.
+The version is managed by the jEAP Spring Boot parent. The starter pulls in the `messaging`,
+`events` and `http` modules with the `configuration` module they share, and registers the Spring Boot
+auto-configuration. The library is enabled by default.
 
 ## 2. Prerequisite: jEAP Messaging
 

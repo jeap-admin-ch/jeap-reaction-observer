@@ -5,6 +5,7 @@ import ch.admin.bit.jeap.messaging.avro.AvroMessageKey;
 import ch.admin.bit.jeap.messaging.kafka.properties.KafkaProperties;
 import ch.admin.bit.jeap.reaction.observer.core.domain.listener.ReactionIdentifiedListener;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.Reaction;
+import ch.admin.bit.jeap.reaction.observer.core.domain.model.ReactionModel;
 import ch.admin.bit.jeap.reaction.observer.event.identified.ReactionIdentifiedMessageKey;
 import ch.admin.bit.jeap.reaction.observer.event.identified.v2.ReactionIdentifiedEvent;
 import ch.admin.bit.jeap.reaction.observer.event.observed.ReactionsObservedEvent;
@@ -26,13 +27,22 @@ public class KafkaEventProducer implements ReactionIdentifiedListener {
     private final KafkaProperties kafkaProperties;
     private final ReactionObserverKafkaConfigProperties config;
     private final KafkaTemplate<AvroMessageKey, AvroMessage> kafkaTemplate;
+    private final int reactionModelVersion;
     private final UUID serviceInstanceIdentifier = Generators.timeBasedEpochGenerator().generate();
+    /**
+     * The time at which this instance began to report its reactions. Each reaction is reported once since then.
+     */
+    private final Instant identificationStart = Instant.now();
 
+    /**
+     * @param reactionModel the reaction model the service observes by, its version is reported in both events
+     */
     public KafkaEventProducer(KafkaProperties kafkaProperties, ReactionObserverKafkaConfigProperties config,
-                              KafkaTemplate<AvroMessageKey, AvroMessage> kafkaTemplate) {
+                              KafkaTemplate<AvroMessageKey, AvroMessage> kafkaTemplate, ReactionModel reactionModel) {
         this.kafkaProperties = kafkaProperties;
         this.config = config;
         this.kafkaTemplate = kafkaTemplate;
+        this.reactionModelVersion = reactionModel.version();
     }
 
     @PostConstruct
@@ -48,12 +58,14 @@ public class KafkaEventProducer implements ReactionIdentifiedListener {
     @Override
     public void onReactionIdentified(Reaction reaction) {
         ReactionIdentifiedEvent event = ReactionIdentifiedEventBuilder
-                .buildEvent(kafkaProperties.getSystemName(), kafkaProperties.getServiceName(), reaction);
+                .buildEvent(kafkaProperties.getSystemName(), kafkaProperties.getServiceName(), reaction,
+                        reactionModelVersion, identificationStart);
         sendSync(config.getReactionIdentifiedTopic(), createKey(reaction), event);
     }
 
     public void sendReactionObservedEvent(Map<String, AtomicInteger> countByReactionId, Instant from, Instant to) {
-        ReactionsObservedEvent event = new ReactionsObservedEventBuilder(kafkaProperties.getSystemName(), kafkaProperties.getServiceName())
+        ReactionsObservedEvent event = new ReactionsObservedEventBuilder(kafkaProperties.getSystemName(), kafkaProperties.getServiceName(),
+                        reactionModelVersion)
                 .serviceInstanceIdentifier(serviceInstanceIdentifier)
                 .countByReactionId(countByReactionId)
                 .timeframe(from, to)

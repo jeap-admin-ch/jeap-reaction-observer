@@ -5,8 +5,11 @@ The Reaction Observer records, per consumed message, how the service responds to
 - **Observation** — a single message seen on Kafka, described by its `type` (`EVENT` or `COMMAND`),
   its fully-qualified name (message type, plus the variant if any) and a small set of properties
   (currently the `topic`). Each observation has a deterministic id derived from these values.
+  With reaction model version 2 an outgoing HTTP request is an observation, too (`HTTP_REQUEST`), see
+  [HTTP requests as actions](http-requests.md).
 - **Trigger** — the observation of a *consumed* message that begins a reaction.
-- **Action** — the observation of a message *produced* while handling a trigger.
+- **Action** — the observation of a message *produced* while handling a trigger, or with reaction model
+  version 2 of an outgoing HTTP request.
 - **Reaction** — a trigger together with the (de-duplicated, ordered) set of actions produced in
   response. A reaction has a stable `id` built from the trigger and action ids, so the same
   behavioural pattern always yields the same id.
@@ -57,11 +60,13 @@ observed in a timeframe, no event is sent. A final event is also published on gr
 ## Best-effort and bounded by design
 
 - Exceptions during recording are caught and logged, never propagated to business logic.
-- At most `4096` distinct reactions and `100` actions per trigger are tracked; once a limit is
-  reached a one-time warning is logged and further items are ignored, capping memory use.
+- At most `4096` distinct reactions and `100` message actions per trigger are tracked; once a limit is
+  reached a one-time warning is logged and further items are ignored, capping memory use. HTTP request
+  actions have a budget of their own of `100` per trigger.
 
 ## Related
 
 - [Getting started](getting-started.md)
+- [HTTP requests as actions](http-requests.md)
 - [Configuration reference](configuration.md)
 - [System behaviour documentation](system-behaviour-documentation.md)

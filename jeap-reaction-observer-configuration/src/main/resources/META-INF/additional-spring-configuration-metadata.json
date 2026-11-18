@@ -1,0 +1,36 @@
+{
+  "properties": [
+    {
+      "name": "jeap.reaction.observer.enabled",
+      "description": "Whether the Reaction Observer is active. Every value but true (case-insensitive) switches it off: the service then observes and reports nothing.",
+      "defaultValue": true,
+      "type": "java.lang.Boolean"
+    }
+  ],
+  "hints": [
+    {
+      "name": "jeap.reaction.observer.enabled",
+      "values": [
+        {
+          "value": true
+        },
+        {
+          "value": false
+        }
+      ]
+    },
+    {
+      "name": "jeap.reaction.observer.model-version",
+      "values": [
+        {
+          "value": 1,
+          "description": "Reaction model version 1: the events and commands a service sends."
+        },
+        {
+          "value": 2,
+          "description": "Reaction model version 2: adds the outgoing HTTP requests of a service. Requires a Reaction Observer Service that supports reaction model version 2."
+        }
+      ]
+    }
+  ]
+}

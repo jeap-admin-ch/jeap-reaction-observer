@@ -1,10 +1,7 @@
 package ch.admin.bit.jeap.reaction.observer.test;
 
 import ch.admin.bit.jeap.messaging.kafka.test.TestKafkaListener;
-import ch.admin.bit.jeap.reaction.observer.event.identified.v2.ActionOnly;
-import ch.admin.bit.jeap.reaction.observer.event.identified.v2.Reaction;
 import ch.admin.bit.jeap.reaction.observer.event.identified.v2.ReactionIdentifiedEvent;
-import ch.admin.bit.jeap.reaction.observer.event.identified.v2.TriggerOnly;
 import ch.admin.bit.jeap.reaction.observer.event.observed.ReactionsObservedEvent;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -12,9 +9,10 @@ import org.awaitility.Awaitility;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 
 import static org.awaitility.Awaitility.await;
@@ -27,8 +25,8 @@ public class ReactionEventsTestConsumer {
     }
 
     @Getter
-    private final Map<String, ReactionIdentifiedEvent> reactionIdentifiedEvents = new HashMap<>();
-    private final List<ReactionsObservedEvent> reactionsObservedEvents = new ArrayList<>();
+    private final Map<String, ReactionIdentifiedEvent> reactionIdentifiedEvents = new ConcurrentHashMap<>();
+    private final List<ReactionsObservedEvent> reactionsObservedEvents = new CopyOnWriteArrayList<>();
 
     @TestKafkaListener(topics = "reaction-identified")
     void onReactionIdentifiedEvent(ReactionIdentifiedEvent event) {
@@ -44,15 +42,14 @@ public class ReactionEventsTestConsumer {
 
     public ReactionIdentifiedEvent awaitReactionIdentifiedEventForReactionId(String reactionId) {
         log.info("Waiting for reaction identified event with reactionId: {}", reactionId);
-        Predicate<ReactionIdentifiedEvent> predicate = event ->
-                switch (event.getPayload().getReaction()) {
-                    case TriggerOnly triggerOnly -> triggerOnly.getReactionId().equals(reactionId);
-                    case ActionOnly actionOnly -> actionOnly.getReactionId().equals(reactionId);
-                    case Reaction reaction -> reaction.getReactionId().equals(reactionId);
-                    default ->
-                            throw new IllegalStateException("Unexpected reaction payload type: " + event.getPayload().getReaction());
-                };
+        return awaitReactionIdentifiedEvent(event -> ReactionIdentifiedEvents.reactionId(event).equals(reactionId));
+    }
 
+    /**
+     * Waits for a reaction identified event matching the predicate, for example
+     * {@link ReactionIdentifiedEvents#hasHttpRequestAction(String)}.
+     */
+    public ReactionIdentifiedEvent awaitReactionIdentifiedEvent(Predicate<ReactionIdentifiedEvent> predicate) {
         await()
                 .until(() -> reactionIdentifiedEvents.values().stream().anyMatch(predicate));
 

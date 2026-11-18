@@ -33,7 +33,9 @@ public record Reaction(Observation trigger, List<Observation> actions, String id
     /**
      * The reactionId is the unique identifier of the reaction. It is formatted as "[&lt;trigger-id&gt;][#&lt;action-id-hash&gt;]".
      * <p>The trigger-id/action-id are the IDs of the observation for the trigger/action, and are composed as follows:
-     * "&lt;type&gt;:&lt;fqn&gt;[:&lt;props_md5_hash_hexstring&gt;]". type and fqn are guaranteed to never contain a hash or colon.
+     * "&lt;type&gt;:&lt;fqn&gt;[:&lt;props_md5_hash_hexstring&gt;]". The type and the fqn part of the id are
+     * guaranteed to never contain a hash or colon. The fqn itself may contain them: the fqn of an HTTP request is
+     * encoded, see ObservationIds#encodeHttpRequestFqn.
      * The props_md5_hash_hexstring is the md5 hash of the string representation of the props map, with sorted keys,
      * built using key=value pairs, separated by ampersands (for example "key1=value1&key2=value2").</p>
      * <p>The action-id-hash is calculated as follows:

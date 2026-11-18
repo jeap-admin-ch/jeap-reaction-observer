@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [11.37.0] - 2026-11-19
+
+### Added
+- Reaction model version 2: outgoing HTTP requests of `RestClient`s are observed as actions (new module
+  `jeap-reaction-observer-http`, part of the starter), named by the provider's `JEAP-REACTION-OBSERVATION`
+  response header or else coarsely by the called target. Opt in with `jeap.reaction.observer.model-version=2`
+  once the Reaction Observer Service supports model version 2; the default stays `1`. See
+  [docs/http-requests.md](docs/http-requests.md)
+
+### Changed
+- `ReactionIdentifiedEvent` 2.1.0 and `ReactionsObservedEvent` 1.1.0 report the reaction model version; the
+  idempotence id of `ReactionIdentifiedEvent` contains the model version and the time at which the instance
+  began to report its reactions
+- New module `jeap-reaction-observer-configuration` (part of the starter) with the settings of the library as a
+  whole
+
 ## [11.36.0] - 2026-11-19
 
 ### Changed

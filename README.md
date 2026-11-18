@@ -8,7 +8,7 @@ Reaction Observer Service and, through it, the [jEAP ArchRepo](https://github.co
 system-behaviour documentation. It provides:
 
 * Automatic observation of reactions (produced events/commands) per consumed message, with no
-  business-code changes
+  business-code changes; with reaction model version 2 outgoing HTTP requests are actions, too
 * A `Reaction Identified Event` emitted when a new behavioural pattern is first observed after startup
 * A `Reactions Observed Event` emitted on a schedule with aggregated reaction counts over a timeframe
 * Spring Boot auto-configuration via a single starter; enabled by default, toggled with one property
@@ -24,6 +24,7 @@ Start with [Getting started](docs/getting-started.md), then follow the links bel
 | How it works (triggers, actions, reactions, observed events) | [docs/how-it-works.md](docs/how-it-works.md)               |
 | Configuration reference (`jeap.reaction.observer.*`)        | [docs/configuration.md](docs/configuration.md)             |
 | System behaviour documentation (the bigger picture)         | [docs/system-behaviour-documentation.md](docs/system-behaviour-documentation.md) |
+| HTTP requests as actions (reaction model version 2, fine and coarse actions, failed calls, metrics) | [docs/http-requests.md](docs/http-requests.md) |
 | Response header (`JEAP-REACTION-OBSERVATION`, operation naming and mapping versions, delivered to every service by the jEAP parent) | [docs/response-header.md](docs/response-header.md) |
 
 ## Modules
@@ -34,7 +35,9 @@ modules is `ch.admin.bit.jeap`; the version is managed by the jEAP Spring Boot p
 | Module                            | Purpose                                                                                          |
 |-----------------------------------|--------------------------------------------------------------------------------------------------|
 | `jeap-reaction-observer-core`     | Domain model and recording logic: `Observation`, `Reaction`, `ReactionRecorder`, `ReactionObserverService` |
+| `jeap-reaction-observer-configuration` | Settings of the library as a whole (`jeap.reaction.observer.enabled`, `jeap.reaction.observer.model-version`), shared by the modules below; no dependency on jEAP Messaging |
 | `jeap-reaction-observer-messaging` | jEAP Messaging callback (`ObserverKafkaMessageCallback`) that feeds the recorder from Kafka send/consume hooks |
+| `jeap-reaction-observer-http`     | Observes outgoing HTTP requests of `RestClient`s as actions; no dependency on jEAP Messaging, used through the starter - see [docs/http-requests.md](docs/http-requests.md) |
 | `jeap-reaction-observer-events`   | Builds and publishes the `ReactionIdentifiedEvent` / `ReactionsObservedEvent` Kafka events, plus the scheduler |
 | `jeap-reaction-observer-starter`  | Spring Boot auto-configuration; the main consumer-facing artifact                                |
 | `jeap-reaction-observer-test`     | Test fixtures (`ReactionKafkaTestBase`, test event builders, consumers)                          |

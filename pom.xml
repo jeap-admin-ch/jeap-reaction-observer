@@ -27,7 +27,7 @@
 
     <artifactId>jeap-reaction-observer</artifactId>
     <name>${project.groupId}:${project.artifactId}</name>
-    <version>11.36.0-SNAPSHOT</version>
+    <version>11.37.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <parent>
@@ -39,10 +39,13 @@
     <properties>
         <maven.javadoc.skip>false</maven.javadoc.skip>
         <jeap-messaging.version>19.35.0</jeap-messaging.version>
+        <jeap-spring-boot-starters.version>25.33.0</jeap-spring-boot-starters.version>
     </properties>
 
     <modules>
         <module>jeap-reaction-observer-core</module>
+        <module>jeap-reaction-observer-configuration</module>
+        <module>jeap-reaction-observer-http</module>
         <module>jeap-reaction-observer-test</module>
         <module>jeap-reaction-observer-events</module>
         <module>jeap-reaction-observer-starter</module>
@@ -59,7 +62,17 @@
             </dependency>
             <dependency>
                 <groupId>ch.admin.bit.jeap</groupId>
+                <artifactId>jeap-reaction-observer-configuration</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.admin.bit.jeap</groupId>
                 <artifactId>jeap-reaction-observer-header-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.admin.bit.jeap</groupId>
+                <artifactId>jeap-reaction-observer-http</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -85,12 +98,12 @@
             <dependency>
                 <groupId>ch.admin.bit.jeap.messagetype.jeap</groupId>
                 <artifactId>reaction-identified-event</artifactId>
-                <version>2.0.0</version>
+                <version>2.1.0</version>
             </dependency>
             <dependency>
                 <groupId>ch.admin.bit.jeap.messagetype.jeap</groupId>
                 <artifactId>reactions-observed-event</artifactId>
-                <version>1.0.0</version>
+                <version>1.1.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

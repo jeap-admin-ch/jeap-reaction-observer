@@ -31,9 +31,10 @@ ArchRepo**, which includes the observed reactions in the generated architecture 
 
 ## What the library currently observes
 
-The only reactions tracked today are domain events and commands produced through jEAP Messaging in
-response to a consumed message. Other kinds of reactions (for example outgoing HTTP calls) may be
-added in the future. For the recording details see [How it works](how-it-works.md).
+The reactions tracked today are triggered by a consumed message. Their actions are the domain events and
+commands produced through jEAP Messaging in response and, with reaction model version 2
+(`jeap.reaction.observer.model-version=2`), the outgoing HTTP requests, see
+[HTTP requests as actions](http-requests.md). For the recording details see [How it works](how-it-works.md).
 
 ## Related
 

@@ -142,7 +142,7 @@ first version that includes it.
 |---|---|
 | `@ControllerAdvice`, `ResponseStatusException` | Header present - the header is set in `preHandle`, before the handler runs |
 | Unhandled exception, container error dispatch to `/error` | Header and `Vary` present - re-applied from a request attribute if the container reset response headers before the error dispatch |
-| 401 from a security filter, 404 with no matching handler, 503 from an ingress/proxy | **No header** - `preHandle` never runs because no handler was ever resolved. The consumer counts an unidentified action |
+| 401 from a security filter, 404 with no matching handler, 503 from an ingress/proxy | **No header** - `preHandle` never runs because no handler was ever resolved. The consumer names the call itself: a coarse action for a status below 500, a failed call that discards the execution for a status of 500 or above, see [HTTP requests as actions](http-requests.md) |
 | A BFF/aggregator copying a downstream response's headers onto its own | A copied downstream `JEAP-REACTION-OBSERVATION` value is always dropped (see `ProtectedObservationHeaderResponse`), so it can neither overwrite the service's own value nor reach the caller when the service sets none itself; this also holds when later filters such as Spring Security wrap the response again |
 | Application interceptors returning `false` from `preHandle` | Header and `Vary` present - this module's interceptor is registered with the highest precedence and runs first |
 | Cacheable responses (without `no-store`) | `Vary: JEAP-REACTION-MODEL-VERSION` is added for every observed operation, merged with any existing `Vary` value, whether or not that particular request carried the signal - the response depends on the signal either way. Authenticated jEAP APIs already set `no-store` via Spring Security, so shared caching rarely applies |
@@ -151,5 +151,6 @@ first version that includes it.
 
 ## Related
 
+- [HTTP requests as actions](http-requests.md)
 - [Configuration reference](configuration.md)
 - [How it works](how-it-works.md)

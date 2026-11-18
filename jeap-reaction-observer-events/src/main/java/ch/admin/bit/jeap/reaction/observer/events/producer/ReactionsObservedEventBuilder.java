@@ -23,11 +23,17 @@ class ReactionsObservedEventBuilder extends AvroDomainEventBuilder<ReactionsObse
     private UUID serviceInstanceIdentifier;
     private Timeframe timeframe;
     private List<Observation> observations;
+    private final int reactionModelVersion;
 
-    ReactionsObservedEventBuilder(String systemName, String serviceName) {
+    /**
+     * @param reactionModelVersion the reaction model version the service observes by, required so that the event
+     *                             never reports another version than the one observed by
+     */
+    ReactionsObservedEventBuilder(String systemName, String serviceName, int reactionModelVersion) {
         super(ReactionsObservedEvent::new);
         this.serviceName = serviceName;
         this.systemName = systemName;
+        this.reactionModelVersion = reactionModelVersion;
     }
 
     ReactionsObservedEventBuilder serviceInstanceIdentifier(UUID serviceInstanceIdentifier) {
@@ -47,13 +53,20 @@ class ReactionsObservedEventBuilder extends AvroDomainEventBuilder<ReactionsObse
 
     private List<Observation> toObservations(Map<String, AtomicInteger> countByReactionId) {
         return countByReactionId.entrySet().stream()
-                .map(entry -> new Observation(entry.getKey(), entry.getValue().get()))
+                .map(entry -> toObservation(entry.getKey(), entry.getValue().get()))
                 .toList();
+    }
+
+    private static Observation toObservation(String reactionId, int count) {
+        return Observation.newBuilder()
+                .setReactionId(reactionId)
+                .setCount(count)
+                .build();
     }
 
     @Override
     public ReactionsObservedEvent build() {
-        setPayload(new ReactionsObservedPayload(timeframe, observations));
+        setPayload(new ReactionsObservedPayload(timeframe, observations, reactionModelVersion));
         idempotenceId(createIdempotenceId());
         return super.build();
     }

@@ -7,7 +7,7 @@
     <parent>
         <groupId>ch.admin.bit.jeap</groupId>
         <artifactId>jeap-reaction-observer</artifactId>
-        <version>11.36.0-SNAPSHOT</version>
+        <version>11.37.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>jeap-reaction-observer-starter</artifactId>
@@ -23,10 +23,42 @@
             <groupId>ch.admin.bit.jeap</groupId>
             <artifactId>jeap-reaction-observer-messaging</artifactId>
         </dependency>
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-reaction-observer-http</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-reaction-observer-configuration</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>ch.admin.bit.jeap</groupId>
             <artifactId>jeap-reaction-observer-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- HTTP clients for the tests of the HTTP request observation; the library itself does not bring one -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-restclient</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- The OAuth2 clients and the token introspection of jEAP: their technical calls must not be observed -->
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-spring-boot-security-client-starter</artifactId>
+            <version>${jeap-spring-boot-starters.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-spring-boot-security-starter</artifactId>
+            <version>${jeap-spring-boot-starters.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.wiremock.integrations</groupId>
+            <artifactId>wiremock-spring-boot-standalone</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

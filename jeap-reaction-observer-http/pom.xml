@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>ch.admin.bit.jeap</groupId>
+        <artifactId>jeap-reaction-observer</artifactId>
+        <version>11.37.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>jeap-reaction-observer-http</artifactId>
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>
+        Observes the outgoing HTTP requests of a service as actions: sends the JEAP-REACTION-MODEL-VERSION request
+        header and names the action by the JEAP-REACTION-OBSERVATION response header of the provider. Deliberately
+        independent of jEAP Messaging, Kafka and Avro.
+    </description>
+    <packaging>jar</packaging>
+
+    <dependencies>
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-reaction-observer-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-reaction-observer-configuration</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+        <!-- The HTTP client dependencies are optional: this module is part of the reaction observer starter and
+             must not put an HTTP client on the classpath of a service that does not call anyone. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-restclient</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <!-- The metrics are optional: they are only registered if the service has a MeterRegistry. -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!-- Generates the IDE metadata of the configuration properties from their Javadoc -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- The provider side of the header protocol, for tests against a real provider -->
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-reaction-observer-header-starter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Keep this module free of jEAP Messaging/Kafka/Avro: it has to work for services that do not use
+                 messaging at all. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>ban-messaging-dependencies</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <exclude>ch.admin.bit.jeap:jeap-reaction-observer-events</exclude>
+                                        <exclude>ch.admin.bit.jeap:jeap-reaction-observer-messaging</exclude>
+                                        <exclude>ch.admin.bit.jeap:jeap-reaction-observer-starter</exclude>
+                                        <exclude>ch.admin.bit.jeap:jeap-reaction-observer-test</exclude>
+                                        <exclude>ch.admin.bit.jeap:jeap-messaging*</exclude>
+                                        <exclude>org.apache.kafka:*</exclude>
+                                        <exclude>org.springframework.kafka:*</exclude>
+                                        <exclude>org.apache.avro:*</exclude>
+                                    </excludes>
+                                    <searchTransitive>true</searchTransitive>
+                                </bannedDependencies>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

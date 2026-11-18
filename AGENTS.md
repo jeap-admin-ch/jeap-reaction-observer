@@ -12,12 +12,23 @@ message (the *trigger*) it records the events/commands the service produces in r
 consumed by the jEAP Reaction Observer Service and feed the jEAP ArchRepo system-behaviour
 documentation. Recording is best-effort and must never affect business logic.
 
+**Purpose - keep it in mind when changing or reviewing the code:** the library describes the *flow of business
+cases* (which trigger makes a service do what), so that the system behaviour documentation can be generated.
+It is not a monitoring of messages or HTTP requests. Reactions must show what a service does in normal
+operation; a reaction caused by a temporary technical failure would document a flow that does not exist.
+Hence an execution with a failed HTTP call is deliberately not reported at all, and what happens inside an
+HTTP client before it returns to the service (for example a retry by a client interceptor) is deliberately
+not observed - only the outcome of the call as the client returns it to the service counts. Missing a recovered temporary failure is intended,
+not a defect. See [docs/http-requests.md](docs/http-requests.md).
+
 ## Repository layout
 
 ```
 pom.xml                              # Parent POM (packaging=pom); declares the modules below
 jeap-reaction-observer-core/         # Domain model + recording: Observation, Reaction, ReactionRecorder, ReactionObserverService
+jeap-reaction-observer-configuration/ # Settings of the library as a whole: ReactionObserverProperties, @ConditionalOnReactionObserverEnabled
 jeap-reaction-observer-messaging/    # ObserverKafkaMessageCallback: JeapKafkaMessageCallback feeding the recorder
+jeap-reaction-observer-http/         # Client interceptor observing outgoing RestClient requests as actions (reaction model version 2)
 jeap-reaction-observer-events/       # Event builders, KafkaEventProducer, ReactionsObservedEventScheduler, config properties
 jeap-reaction-observer-starter/      # @AutoConfiguration wiring; main consumer-facing artifact
 jeap-reaction-observer-test/         # Test fixtures (ReactionKafkaTestBase, test event builders, consumers)
@@ -25,7 +36,9 @@ jeap-reaction-observer-header-starter/ # Standalone JEAP-REACTION-OBSERVATION re
 Jenkinsfile, publiccode.yml, CHANGELOG.md, LICENSE
 ```
 
-Dependency direction: `core` ← `messaging` / `events` ← `starter`. The `messaging` module bridges
+Dependency direction: `core` ← `configuration` ← `messaging` / `events` / `http` ← `starter`. The `http` module
+and with it the `configuration` module must not depend on jEAP Messaging, Kafka or Avro (enforced by a Maven
+Enforcer rule in `http`). The `messaging` module bridges
 jEAP Messaging's `JeapKafkaMessageCallback` to the `core` recorder; the `events` module turns
 recorded reactions into Avro Kafka events (`reaction-identified-event`, `reactions-observed-event`).
 The `header-starter` module is independent: it must not depend on the other modules, jEAP Messaging,
@@ -51,15 +64,35 @@ Kafka or Avro (enforced by a Maven Enforcer rule), as it is meant to be added to
   `jeap.reaction.observer.events.*`. The master switch is `jeap.reaction.observer.enabled` (default `true`).
 - Auto-configuration is registered via `@AutoConfiguration` and
   `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` in each of the
-  `messaging`, `events` and `starter` modules; all are gated on `jeap.reaction.observer.enabled`.
+  `messaging`, `events`, `http` and `starter` modules; all are gated on `jeap.reaction.observer.enabled`.
 - The library publishes its events with jEAP Messaging and therefore requires a working jEAP Messaging
   configuration (`jeap.messaging.kafka.*`, including `systemName`/`serviceName`). The reaction events
   are exempt from message-contract validation, so consuming services do not declare contracts for them.
 - Recording is **best-effort**: exceptions in `ReactionObserverService` are caught and logged, never
   propagated. The observer's own events (`ReactionIdentifiedEvent`, `ReactionsObservedEvent`) and
   `MessageProcessingFailedEvent` are filtered out so they are not observed as reactions.
-- Bounded by design: at most `MAX_REACTION_COUNT` (4096) distinct reactions and `MAX_ACTION_COUNT`
-  (100) actions per trigger are tracked, to cap memory use.
+- Bounded by design: at most `MAX_REACTION_COUNT` (4096) distinct reactions and `MAX_MESSAGING_ACTION_COUNT`
+  (100) message actions per trigger are tracked, to cap memory use; HTTP request actions have their own
+  budget (`MAX_HTTP_ACTION_COUNT`, 100 per trigger) and coarse actions are named for a limited number of
+  targets (`jeap.reaction.observer.http.max-target-count`, 100 by default).
+- The settings of the library as a whole are in the module `configuration`: `ReactionObserverProperties`
+  (`jeap.reaction.observer.model-version`) and, for `jeap.reaction.observer.enabled`, the condition
+  `@ConditionalOnReactionObserverEnabled` (a `@ConditionalOnProperty`: every value but `true` switches the
+  observer off), which every auto-configuration of the observer carries. Do not read the switch anywhere
+  else, neither with a `@ConditionalOnProperty` of its own nor from the `Environment`.
+  `ReactionObserverProperties` is read with `ReactionObserverProperties.of(environment)`, also in
+  conditions, where no bean exists yet. It is not registered as a bean: no part of the library needs one.
+- The reaction model a service observes by is chosen with `jeap.reaction.observer.model-version`, the number
+  of the model version (`1` or `2`, default `1`). The default is defined only by the initial value of the
+  field in `ReactionObserverProperties`, a literal, so that it shows in the configuration metadata. The
+  property is the single source of the model: `events` (reported model version) and `http` (condition, request header) both read it with
+  `ReactionObserverProperties.of(environment).reactionModel()`, which looks the model up by its version
+  (`ReactionModel.ofVersion`); a version without a model fails the start. Do not bind the property to the
+  enum (Spring converts a number to an enum by the position of the constant, `1` would be `V2`), do not read
+  it anywhere else and do not pass the model around as a bean (an application could replace it, and the
+  reported version and the observation would disagree). With the default the library must behave towards
+  the Reaction Observer Service as before. The names of coarse actions and the id encoding of HTTP requests
+  are part of reaction ids - changing them is a migration.
 
 ## Docs
 

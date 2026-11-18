@@ -3,10 +3,11 @@ package ch.admin.bit.jeap.reaction.observer.events.producer;
 import ch.admin.bit.jeap.messaging.avro.AvroMessage;
 import ch.admin.bit.jeap.messaging.avro.AvroMessageKey;
 import ch.admin.bit.jeap.messaging.kafka.properties.KafkaProperties;
+import ch.admin.bit.jeap.reaction.observer.core.domain.model.ReactionModel;
 import ch.admin.bit.jeap.reaction.observer.events.spring.ReactionObserverKafkaConfigProperties;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -27,8 +28,12 @@ class KafkaEventProducerInitTest {
     @Mock
     KafkaTemplate<AvroMessageKey, AvroMessage> kafkaTemplate;
 
-    @InjectMocks
     KafkaEventProducer producer;
+
+    @BeforeEach
+    void createProducer() {
+        producer = new KafkaEventProducer(kafkaProperties, config, kafkaTemplate, ReactionModel.V1);
+    }
 
     @Test
     void init_doesNotThrowWhenSystemAndServiceNamePresent() {
