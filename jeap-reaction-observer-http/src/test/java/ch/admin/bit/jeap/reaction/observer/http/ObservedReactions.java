@@ -12,14 +12,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 /**
- * Test fixture: a real recorder and observer service, keeping the reactions the service would report.
+ * Test fixture: a real recorder and observer service, keeping the reactions the service would report. The service
+ * notifies about identified reactions in the observing thread, so that they are visible right after the call.
  */
 class ObservedReactions implements ReactionIdentifiedListener {
 
     static final Observation TRIGGER = Observation.ofEvent("TriggerEvent", "trigger-topic");
 
     private final List<Reaction> identified = new CopyOnWriteArrayList<>();
-    private final ReactionObserverService reactionObserverService = new ReactionObserverService(this);
+    private final ReactionObserverService reactionObserverService = new ReactionObserverService(this, Runnable::run);
     private final ReactionRecorder recorder = new ReactionRecorder(reactionObserverService);
 
     @Override

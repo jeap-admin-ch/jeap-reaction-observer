@@ -49,7 +49,9 @@ The observer's own events (`ReactionIdentifiedEvent`, `ReactionsObservedEvent`) 
 
 1. **Identify** — the first time a reaction id is seen (after service-instance startup), a
    `ReactionIdentifiedEvent` is published to the `reaction-identified-topic`, carrying the full
-   trigger/action structure of the new pattern.
+   trigger/action structure of the new pattern. A single thread of the observer publishes these events
+   one after the other, so a slow or unreachable Kafka broker does not delay the observed code. If the
+   publication fails, the reaction is identified again the next time it occurs.
 2. **Count** — every observed reaction increments an in-memory counter keyed by reaction id.
 
 On a schedule, `ReactionsObservedEventScheduler` drains the counters and publishes a single
@@ -60,6 +62,12 @@ observed in a timeframe, no event is sent. A final event is also published on gr
 ## Best-effort and bounded by design
 
 - Exceptions during recording are caught and logged, never propagated to business logic.
+- The observed code never waits for the publication of a `ReactionIdentifiedEvent` (see above). On
+  graceful shutdown, pending identifications get a few seconds to complete; an abandoned one is
+  identified by a later run of the service instance when the reaction occurs there.
+- As a consequence, a `ReactionsObservedEvent` can count a reaction whose identification is still
+  pending or has failed, most likely the final event on shutdown or while the broker is slow. The
+  Reaction Observer Service skips such counts.
 - At most `4096` distinct reactions and `100` message actions per trigger are tracked; once a limit is
   reached a one-time warning is logged and further items are ignored, capping memory use. HTTP request
   actions have a budget of their own of `100` per trigger.

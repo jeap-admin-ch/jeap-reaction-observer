@@ -20,6 +20,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   began to report its reactions
 - New module `jeap-reaction-observer-configuration` (part of the starter) with the settings of the library as a
   whole
+- The `ReactionIdentifiedEvent` is published in a thread of its own: a slow or unreachable Kafka broker no
+  longer delays the observed code, e.g. an outgoing HTTP request outside of a trigger. A failed publication is
+  retried the next time the reaction occurs
 
 ## [11.36.0] - 2026-11-19
 

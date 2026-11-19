@@ -1,5 +1,7 @@
 package ch.admin.bit.jeap.reaction.observer.http;
 
+import ch.admin.bit.jeap.reaction.observer.core.domain.ReactionObserverService;
+import ch.admin.bit.jeap.reaction.observer.core.domain.ReactionRecorder;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.ReactionModel;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -30,6 +32,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -37,6 +41,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -449,6 +454,42 @@ class ReactionObservingClientHttpRequestInterceptorTest {
                 .isInstanceOf(ResourceAccessException.class)
                 .hasCause(ioException);
         failingObserverServer.verify();
+    }
+
+    @Test
+    void blockingReportOfTheIdentification_doesNotDelayTheCallOutsideOfATrigger() throws InterruptedException {
+        CountDownLatch reported = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        try (ReactionObserverService blockingService = new ReactionObserverService(reaction -> {
+            reported.countDown();
+            try {
+                release.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        })) {
+            ReactionRecorder recorder = new ReactionRecorder(blockingService);
+            HttpActionObserver blockingObserver = new HttpActionObserver(() -> recorder, new HttpTargetNaming(false),
+                    new HttpTargetRegistry(MAX_TARGET_COUNT), HttpObservationMetrics.NONE, LOG_INTERVAL);
+            RestClient.Builder builder = RestClient.builder()
+                    .requestInterceptor(new ReactionObservingClientHttpRequestInterceptor(blockingObserver, ReactionModel.V2, LOG_INTERVAL));
+            MockRestServiceServer blockingServer = MockRestServiceServer.bindTo(builder).build();
+            RestClient client = builder.build();
+            blockingServer.expect(requestTo(URL)).andRespond(withSuccess("ok", MediaType.TEXT_PLAIN));
+
+            try {
+                String body = assertTimeoutPreemptively(Duration.ofSeconds(10),
+                        () -> client.get().uri(URL).retrieve().body(String.class));
+
+                assertThat(body).isEqualTo("ok");
+                assertThat(reported.await(10, TimeUnit.SECONDS))
+                        .describedAs("The identification of the action-only reaction is reported, in a thread of its own")
+                        .isTrue();
+                blockingServer.verify();
+            } finally {
+                release.countDown(); // before closing the service, which waits for the listener
+            }
+        }
     }
 
     private <T> T inTrigger(Supplier<T> call) {

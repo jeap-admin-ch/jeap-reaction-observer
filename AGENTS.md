@@ -71,6 +71,12 @@ Kafka or Avro (enforced by a Maven Enforcer rule), as it is meant to be added to
 - Recording is **best-effort**: exceptions in `ReactionObserverService` are caught and logged, never
   propagated. The observer's own events (`ReactionIdentifiedEvent`, `ReactionsObservedEvent`) and
   `MessageProcessingFailedEvent` are filtered out so they are not observed as reactions.
+- `ReactionObserverService` notifies the `ReactionIdentifiedListener` on a single thread of its own, never on
+  the observing thread: a slow Kafka broker must not delay the observed code. A reaction is marked as
+  identified before the notification and unmarked when the notification or its hand-off fails, so it is
+  identified again the next time it occurs; only the first of consecutive failures is logged as a warning.
+  Unit tests that expect the notification right away pass a direct executor (`Runnable::run`); `close()`
+  shuts down only the executor the service created itself.
 - Bounded by design: at most `MAX_REACTION_COUNT` (4096) distinct reactions and `MAX_MESSAGING_ACTION_COUNT`
   (100) message actions per trigger are tracked, to cap memory use; HTTP request actions have their own
   budget (`MAX_HTTP_ACTION_COUNT`, 100 per trigger) and coarse actions are named for a limited number of
