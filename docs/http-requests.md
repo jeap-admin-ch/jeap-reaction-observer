@@ -64,6 +64,59 @@ The requests of every `RestClient` built with the `RestClient.Builder` provided 
 - `WebClient` and `RestTemplate` - jEAP does not support the reactive stack, and `RestTemplate` is deprecated
 - technical calls of the jEAP security starters: the token request of an OAuth2 client and the token
   introspection of a resource server
+- clients created on purpose without the observation, see
+  [Clients without observation](#clients-without-observation)
+
+## Clients without observation
+
+The observation adds an interceptor to a client, and Spring buffers the request body of a client with an
+interceptor in memory. For most clients that does not matter. A client that streams large request bodies - the
+upload of a file, for example - can be created without the observation, with a builder of the
+`UnobservedRestClientBuilderFactory`:
+
+```java
+@Bean
+RestClient uploadClient(UnobservedRestClientBuilderFactory unobservedRestClientBuilderFactory) {
+    return unobservedRestClientBuilderFactory.create()
+            .baseUrl("https://documents.example.org")
+            .build();
+}
+```
+
+`create()` returns a new builder, configured like the `RestClient.Builder` provided by Spring Boot: all other
+customizers are applied to it. For the clients built with it this means:
+
+- Their requests are **no actions**: they are missing in the reactions of the service and so in the system
+  behaviour documentation. Create only those clients without the observation that need it.
+- The Reaction Observer no longer makes Spring buffer their request bodies. Whether a request body is
+  streamed then depends on the rest of the client: it must not have any other interceptor, its request
+  factory must not buffer, and a predicate set with `bufferContent(...)` on its builder must not apply to the
+  request.
+
+The factory is available with every configuration of the Reaction Observer, also with reaction model version 1
+or with `jeap.reaction.observer.enabled=false`, and in tests with `@RestClientTest`, where its clients are bound
+to the `MockRestServiceServer` like all others.
+
+### HTTP service clients without observation
+
+Where HTTP requests are observed, so are the clients of all HTTP service groups (`@ImportHttpServices`). A
+service that needs an HTTP interface client (`@HttpExchange`) without the observation does not declare it in a
+group, but builds the proxy itself on top of a `RestClient` without observation:
+
+```java
+@Bean
+DocumentUploadClient documentUploadClient(UnobservedRestClientBuilderFactory unobservedRestClientBuilderFactory) {
+    RestClient restClient = unobservedRestClientBuilderFactory.create()
+            .baseUrl("https://documents.example.org")
+            .build();
+    return HttpServiceProxyFactory.builderFor(RestClientAdapter.create(restClient))
+            .build()
+            .createClient(DocumentUploadClient.class);
+}
+```
+
+The settings of a group (`spring.http.serviceclient.<group>.*`) do not apply to such a client: set the base URL
+and what else it needs on the builder.
 
 ## How a request is observed
 
@@ -270,7 +323,7 @@ If the service has a `MeterRegistry`, two counters are published. Neither carrie
 | Resilience outside of the client (a circuit breaker, bulkhead or time limiter around a method, for example Resilience4j `@CircuitBreaker` with a fallback method) | Not observed: while the circuit breaker is open, no call reaches the client, the fallback runs, and the execution counts as a normal reaction - one that describes an operational failure. Use resilience as an interceptor of the client instead: a call it aborts is a failed call and discards the execution |
 | Response body | The observation decides when status and headers of the response are there; a timeout before that is a failed call, whichever HTTP client library is used. If reading the body fails afterwards, the call still counts as answered |
 | Request factory that reads the response only when its status is asked for (`SimpleClientHttpRequestFactory` with a request body; Spring Boot chooses it only if no other HTTP client is available, for example on a runtime without the module `java.net.http`) | The observation reads the status first. If that fails, the call is a failed call and the response passes unchanged: reading it, the caller gets an exception of the same class and with the same message as without the observation, but HttpURLConnection gives a new instance with the original one as its cause. A runtime exception while the response is read (for example from a custom `CookieHandler`) reaches a caller that reads the headers first (as `retrieve().body(...)` does) wrapped in a `RuntimeException` |
-| Request body | Spring buffers the request body of a `RestClient` in memory as soon as the client has an interceptor, and this library adds one. A client that streamed a large upload before no longer does so with reaction model version 2 |
+| Request body | Spring buffers the request body of a `RestClient` in memory as soon as the client has an interceptor, and this library adds one. A client that streamed a large upload before no longer does so with reaction model version 2, unless it is created without the observation, see [Clients without observation](#clients-without-observation) |
 | Calls in other threads (`@Async`, own executors) | Not assigned to the trigger of the calling thread; they become action-only reactions |
 | Calls while an incoming HTTP request is handled | Incoming requests are no triggers yet: the calls are outside of a trigger, and their actions become action-only reactions until a later version observes incoming requests as triggers |
 | Conditional calls without header | Every conditional coarse action splits a reaction into variants; k independent ones yield up to 2^k reactions. A 401 of a provider that otherwise delivers the header yields a rare reaction with a coarse action |

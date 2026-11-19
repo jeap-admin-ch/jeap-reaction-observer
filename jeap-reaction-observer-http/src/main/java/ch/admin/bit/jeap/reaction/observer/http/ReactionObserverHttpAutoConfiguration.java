@@ -56,11 +56,14 @@ public class ReactionObserverHttpAutoConfiguration {
      * interceptors that other customizers or a jEAP starter added before - also with {@code addFirst}.
      * Interceptors that the service adds to the builder later on are appended and run inside of the
      * observation as well.
+     * <p>
+     * The builders of the {@link UnobservedRestClientBuilderFactory} are left alone.
      */
     @Bean
     @Order(Ordered.LOWEST_PRECEDENCE)
     RestClientCustomizer jeapReactionObserverRestClientCustomizer(ReactionObservingClientHttpRequestInterceptor interceptor) {
-        return restClientBuilder -> restClientBuilder.requestInterceptors(interceptors -> interceptors.addFirst(interceptor));
+        return RestClientObservationSuppression.unlessSuppressed(restClientBuilder ->
+                restClientBuilder.requestInterceptors(interceptors -> interceptors.addFirst(interceptor)));
     }
 
     /**

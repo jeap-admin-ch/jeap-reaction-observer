@@ -64,7 +64,9 @@ Kafka or Avro (enforced by a Maven Enforcer rule), as it is meant to be added to
   `jeap.reaction.observer.events.*`. The master switch is `jeap.reaction.observer.enabled` (default `true`).
 - Auto-configuration is registered via `@AutoConfiguration` and
   `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` in each of the
-  `messaging`, `events`, `http` and `starter` modules; all are gated on `jeap.reaction.observer.enabled`.
+  `messaging`, `events`, `http` and `starter` modules; all are gated on `jeap.reaction.observer.enabled`,
+  except `UnobservedRestClientBuilderAutoConfiguration`: a service that uses the factory for clients without
+  observation has to start with every configuration of the observer.
 - The library publishes its events with jEAP Messaging and therefore requires a working jEAP Messaging
   configuration (`jeap.messaging.kafka.*`, including `systemName`/`serviceName`). The reaction events
   are exempt from message-contract validation, so consuming services do not declare contracts for them.
@@ -89,8 +91,9 @@ Kafka or Avro (enforced by a Maven Enforcer rule), as it is meant to be added to
 - The settings of the library as a whole are in the module `configuration`: `ReactionObserverProperties`
   (`jeap.reaction.observer.model-version`) and, for `jeap.reaction.observer.enabled`, the condition
   `@ConditionalOnReactionObserverEnabled` (a `@ConditionalOnProperty`: every value but `true` switches the
-  observer off), which every auto-configuration of the observer carries. Do not read the switch anywhere
-  else, neither with a `@ConditionalOnProperty` of its own nor from the `Environment`.
+  observer off), which every auto-configuration of the observer carries (with the one exception named
+  above). Do not read the switch anywhere else, neither with a `@ConditionalOnProperty` of its own nor from
+  the `Environment`.
   `ReactionObserverProperties` is read with `ReactionObserverProperties.of(environment)`, also in
   conditions, where no bean exists yet. It is not registered as a bean: no part of the library needs one.
 - The reaction model a service observes by is chosen with `jeap.reaction.observer.model-version`, the number

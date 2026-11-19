@@ -1,1 +1,2 @@
 ch.admin.bit.jeap.reaction.observer.http.ReactionObserverHttpAutoConfiguration
+ch.admin.bit.jeap.reaction.observer.http.UnobservedRestClientBuilderAutoConfiguration

@@ -80,6 +80,12 @@
             <artifactId>spring-boot-starter-web</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- The @RestClientTest slice, in which the factory for clients without observation has to be available -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-restclient-test</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- The provider side of the header protocol, for tests against a real provider -->
         <dependency>
             <groupId>ch.admin.bit.jeap</groupId>

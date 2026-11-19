@@ -8,7 +8,7 @@ working [jEAP Messaging](https://github.com/jeap-admin-ch/jeap-messaging) config
 
 | Name                                                  | Default | Description                                                                                                                  |
 |-------------------------------------------------------|---------|------------------------------------------------------------------------------------------------------------------------------|
-| `jeap.reaction.observer.enabled`                      | `true`  | When `false` - or any other value but `true` - no auto-configuration is activated and nothing is observed or published (e.g. in tests); the other `jeap.reaction.observer.*` settings are then not read. |
+| `jeap.reaction.observer.enabled`                      | `true`  | When `false` - or any other value but `true` - nothing is observed or published (e.g. in tests): no auto-configuration is activated but the one of the factory for [clients without observation](http-requests.md#clients-without-observation); the other `jeap.reaction.observer.*` settings are then not read. |
 | `jeap.reaction.observer.events.reaction-identified-topic` | —   | Kafka topic for `ReactionIdentifiedEvent` messages. Required when the observer is enabled                                    |
 | `jeap.reaction.observer.events.reactions-observed-topic`  | —   | Kafka topic for `ReactionsObservedEvent` messages. Required when the observer is enabled                                     |
 | `jeap.reaction.observer.events.observed-event-rate-seconds` | `300` | Interval (seconds) at which aggregated `ReactionsObservedEvent` messages are published. A value `<= 0` disables the scheduler |

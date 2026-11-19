@@ -13,6 +13,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   response header or else coarsely by the called target. Opt in with `jeap.reaction.observer.model-version=2`
   once the Reaction Observer Service supports model version 2; the default stays `1`. See
   [docs/http-requests.md](docs/http-requests.md)
+- With reaction model version 2 Spring buffers the request bodies of the observed `RestClient`s in memory,
+  because the observation adds an interceptor to them. A client that has to stream large request bodies can be
+  created without the observation with the new `UnobservedRestClientBuilderFactory`, see
+  [Clients without observation](docs/http-requests.md#clients-without-observation)
 
 ### Changed
 - `ReactionIdentifiedEvent` 2.1.0 and `ReactionsObservedEvent` 1.1.0 report the reaction model version; the
