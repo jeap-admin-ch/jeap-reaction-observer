@@ -78,9 +78,9 @@ and then decides by the outcome of that single request:
 
 | Outcome of the request | Result |
 |---|---|
-| Valid `JEAP-REACTION-OBSERVATION` header, whatever the status (also 4xx and 5xx) | **Fine action**, named by the provider. The operation is identified and it took place |
-| No valid header, status below 500 - a provider without the header module, an external target, a 401 of a security filter, a 404 without a mapping | **Coarse action**, named by the called target and the method |
-| No valid header, status 500 or above - a 503 of an ingress, a 502 of a gateway, a 500 of an external target | **Failed call**: no action, and the execution is discarded |
+| Valid `JEAP-REACTION-OBSERVATION` header with an operation name the instance accepts (see below), whatever the status (also 4xx and 5xx) | **Fine action**, named by the provider. The operation is identified and it took place |
+| No valid header or an operation name over the limit, status below 500 - a provider without the header module, an external target, a 401 of a security filter, a 404 without a mapping | **Coarse action**, named by the called target and the method |
+| No valid header or an operation name over the limit, status 500 or above - a 503 of an ingress, a 502 of a gateway, a 500 of an external target | **Failed call**: no action, and the execution is discarded |
 | No response - I/O error, timeout, or any other exception thrown instead of a response, for example by another interceptor of the client (an open circuit breaker) | **Failed call**: no action, and the execution is discarded. The exception passes to the caller unchanged |
 
 The name comes from another service and ends up in observation ids, events and logs, so the consumer
@@ -91,6 +91,12 @@ longer than 600 characters, if it contains a control character, a line or paragr
 invisible format character (line break, tab, zero-width space, ...), or if it starts with `//` (the mark of a
 coarse action). An oversized header line is invalid as a whole, also if its first member alone would be
 valid. What follows the first member is ignored and not validated.
+
+A valid name is accepted only as long as the instance has room for it: the number of new names a target may
+contribute and the number of different names in total are limited, see
+[Limits of the observation](#limits-of-the-observation). A response with a name over a limit counts like a
+response without a valid header: with a status below 500 the request becomes a coarse action, with a status of
+500 or above it is a failed call.
 
 Like a message sent outside of a trigger, a request outside of a trigger (for example in a scheduler) becomes
 an action-only reaction, unless it fails (see [Failed calls](#failed-calls-discard-the-execution)). Incoming
@@ -154,9 +160,10 @@ name never starts with it. The path is always `/{*}`, "any path".
 | `GET https://foo.bar.admin.ch/tenants/4711/api/orders` | `//foo.bar.admin.ch GET /{*}` - the API root is not the second segment |
 
 A coarse action says that the service called the target and got an answer with a status below 500 that does
-not name the operation. It does not prove that the provider itself answered or that an operation ran - the
-answer may be a 401 or 404 of a gateway. Once the provider delivers the header, its operations take the
-place of the coarse action.
+not name the operation, or that names one over the limit of operation names. It does not prove that the
+provider itself answered or that an operation ran - the answer may be a 401 or 404 of a gateway. Once the
+provider delivers the header, its operations take the place of the coarse action, within the
+[limits of operation names](#limits-of-the-observation).
 
 These rules are a fixed part of the library and not configurable: the target is part of the reaction id, so
 changing a rule would rename coarse actions and the reactions they are part of.
@@ -164,7 +171,8 @@ changing a rule would rename coarse actions and the reactions they are part of.
 ### Failed calls discard the execution
 
 A call has failed if it reached the interceptors of the client and there is no response - the call ends with
-an exception, whatever its cause - or if the response has a status of 500 or above and no valid header. A
+an exception, whatever its cause - or if the response has a status of 500 or above and no valid header (or a
+header with an operation name over the limit, which counts like no valid header). A
 failure to read the status of the response counts as no response: no response arrived, the call failed. That
 holds also if the service catches the failure, for example in an `exchange` callback, and carries on with a
 fallback, or if it never looks at the response and so does not notice the failure. Then
@@ -185,7 +193,8 @@ service does. Only what has been identified with certainty is counted.
   fine or coarse action as for any successful call, and the execution counts (see [Purpose](#purpose)).
 - With nested triggers only the execution of the innermost current trigger is discarded.
 - Only the outcome of the single call counts. The library does not remember which targets delivered the
-  header before.
+  header before. What it remembers serves the limits alone: the targets of coarse actions and the operation
+  names accepted so far.
 - Outside of a trigger a failed call simply does not become an action-only reaction.
 - A failed call is visible in the loss metric (`call_failed`) and in the log (at most one entry per
   `jeap.reaction.observer.http.log-interval`, one minute by default).
@@ -200,6 +209,31 @@ service does. Only what has been identified with certainty is counted.
   with `0` an instance names no coarse actions at all, fine actions are not affected. As `0` is set on
   purpose, it writes no log entry about the limit; the loss metric still counts these requests as
   `target_limit`.
+- **Operation names**: the operation names an instance has accepted form one stock that all targets share,
+  counted from its start:
+  - A target (the called host and, where recognised, context - as in the name of a coarse action) may
+    contribute at most 100 new names to the stock.
+  - A name that is already accepted may be named by every target, also by one that may not contribute a new
+    name any more. It is an action already.
+  - The instance accepts at most 1000 different names in total.
+
+  The names come from the called targets, and each new name is a new action: a target that names a different
+  operation with every response - by mistake or not - would otherwise create a new reaction per call, until the
+  instance reaches its limit of reactions. A request whose response names an operation that is not accepted is
+  observed like one whose operation is not named: as a coarse action of that target, which is subject to the
+  limit of targets above, or as a failed call if the status is 500 or above. Accepted names stay accepted. A
+  target at its limit leaves the other targets their share - as long as the limit in total is not reached:
+  from then on no new name is accepted from any target until the instance restarts.
+  The limits bound the names, not the reactions: the accepted names still combine with the triggers that call
+  the target and with each other, see [Known limits](#known-limits).
+  New names are counted by the called target, not by the component a name claims to belong to. The limit in
+  total is there because the limit per target bounds nothing if the targets themselves come from data. Which
+  names are among the accepted ones depends on the instance and on the order of its calls. A service that
+  calls more operations raises the limits with
+  `jeap.reaction.observer.http.max-new-operation-count-per-target` and
+  `jeap.reaction.observer.http.max-operation-count`; with `0` for either an instance accepts no operation names
+  at all and writes no warning about the limit. The diagnosis metric counts these requests as
+  `operation_limit`.
 - **Actions per trigger**: at most 100 HTTP request actions per trigger are recorded, in a budget of their
   own. The limit of 100 message actions per trigger is unchanged, so HTTP requests never push a message out
   of a reaction.
@@ -211,7 +245,7 @@ If the service has a `MeterRegistry`, two counters are published. Neither carrie
 
 | Metric (Prometheus name) | `reason` | Counts |
 |---|---|---|
-| `jeap_reaction_observer_unidentified_http_calls_total` | `no_header`, `invalid_header`, `no_response` | Diagnosis: every request whose operation the provider did not name, exactly once and at the time of the request - also outside of a trigger and in a discarded execution |
+| `jeap_reaction_observer_unidentified_http_calls_total` | `no_header`, `invalid_header`, `operation_limit`, `no_response` | Diagnosis: every request that was not identified by an operation name of the provider, exactly once and at the time of the request - also outside of a trigger and in a discarded execution |
 | `jeap_reaction_observer_dropped_http_calls_total` | `call_failed`, `target_limit`, `http_action_limit` | Loss: every observed request that did not become an action, exactly once. The one exception: a request to a URI without a host has no action and no loss reason |
 
 - `call_failed` counts the failed calls, not the discarded executions.
@@ -219,6 +253,10 @@ If the service has a `MeterRegistry`, two counters are published. Neither carrie
   a request has at most one loss reason.
 - A request without a header to a target over the limit counts once in each metric (`no_header` and
   `target_limit`); a failed call likewise (its diagnosis reason and `call_failed`).
+- A request whose response names an operation that is not accepted counts as `operation_limit` in the
+  diagnosis metric. It is not a loss as long as it becomes a coarse action; it counts in the loss metric too if
+  the target is over the limit of targets (`target_limit`), if the trigger already has its maximum of HTTP
+  request actions (`http_action_limit`) or if the status is 500 or above (`call_failed`).
 - Only HTTP requests are counted: neither the limit of message actions per trigger, nor the limit of
   reactions per instance, nor the other actions of a discarded execution.
 
@@ -236,9 +274,11 @@ If the service has a `MeterRegistry`, two counters are published. Neither carrie
 | Calls in other threads (`@Async`, own executors) | Not assigned to the trigger of the calling thread; they become action-only reactions |
 | Calls while an incoming HTTP request is handled | Incoming requests are no triggers yet: the calls are outside of a trigger, and their actions become action-only reactions until a later version observes incoming requests as triggers |
 | Conditional calls without header | Every conditional coarse action splits a reaction into variants; k independent ones yield up to 2^k reactions. A 401 of a provider that otherwise delivers the header yields a rare reaction with a coarse action |
+| A target names many different operations, for example because its paths are not templated (`GET /api/partners/4711`) | The names are accepted up to the limits of operation names, each as an action of its own. Combined with the triggers that call the target and with each other they can still make up more reactions than the 4096 an instance identifies |
 | Calls to a varying selection of targets (for example webhooks per subscriber) | Each selection is a reaction of its own. Once an instance has identified 4096 reactions, it identifies no new ones - of messages neither - until it restarts; logged once as a warning |
 | Retry within a trigger, first answer without header (status below 500), then with header | The reaction contains the coarse and the fine action |
-| Several providers behind one host without a recognisable context | The coarse action names the host, i.e. the gateway |
+| Several providers behind one host without a recognisable context | The coarse action names the host, i.e. the gateway. The providers share the limit of new operation names per target |
+| A target names operations that are not its own | The consumer cannot check the name a target gives its operation: a target can name operations of any component, and they appear in the system behaviour documentation as called by the service. Their number is limited, see [Limits of the observation](#limits-of-the-observation) |
 | Context | Only recognised in front of an API root. The same service shows up as `//<host>/<context>` for calls to an API root and as `//<host>` for all other paths. A first segment in front of an API root that is no context (`/rest/api/...`, `/v3/api-docs`) is read as one; if it is variable, it takes up targets until the limit is reached |
 | Stages | Hosts differ per stage, so the names of coarse actions and the ids of reactions containing them cannot be compared between environments |
 | Actuator, `/error` and springdoc endpoints of a provider | The header module does not name them; calls to them are coarse actions if the status is below 500. A status of 500 or above discards the execution, see [Failed calls](#failed-calls-discard-the-execution) |

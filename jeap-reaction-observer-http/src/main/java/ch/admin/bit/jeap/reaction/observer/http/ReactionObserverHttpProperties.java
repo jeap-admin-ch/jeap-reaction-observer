@@ -22,10 +22,29 @@ public class ReactionObserverHttpProperties {
     private int maxTargetCount = 100;
 
     /**
+     * The number of new operation names one target (host and, where recognised, context) may contribute to the
+     * operation names the instance accepts, counted from the start of the instance. A name that is already
+     * accepted may be named by every target and does not count. A request whose response names a further new
+     * operation is observed like one whose operation is not named; the diagnosis metric counts it as
+     * operation_limit. With 0 the instance accepts no operation names at all, without a warning about the limit.
+     * A negative value fails the start of the service.
+     */
+    private int maxNewOperationCountPerTarget = 100;
+
+    /**
+     * The number of different operation names an instance accepts in total, whichever targets name them,
+     * counted from the start of the instance. A request whose response names a further operation is observed
+     * like one whose operation is not named; the diagnosis metric counts it as operation_limit. With 0 the
+     * instance accepts no operation names at all, without a warning about the limit. A negative value fails the
+     * start of the service.
+     */
+    private int maxOperationCount = 1000;
+
+    /**
      * How often the observation of HTTP requests writes each of its recurring log entries (failed call, target
-     * over the limit, failure of the observation itself): at most once per interval, with the number of
-     * occurrences since the last entry. A number without a unit is in seconds. With 0 every occurrence is
-     * logged.
+     * over the limit, operation name over the limit, failure of the observation itself): at most once per
+     * interval, with the number of occurrences since the last entry. A number without a unit is in seconds.
+     * With 0 every occurrence is logged.
      */
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration logInterval = Duration.ofMinutes(1);

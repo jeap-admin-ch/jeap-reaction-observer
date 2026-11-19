@@ -42,6 +42,7 @@ public class ReactionObserverHttpAutoConfiguration {
                 new LazyReactionRecorder(reactionRecorder),
                 new HttpTargetNaming(properties.getTargetHost().isIncludePort()),
                 new HttpTargetRegistry(properties.getMaxTargetCount()),
+                new HttpOperationRegistry(properties.getMaxNewOperationCountPerTarget(), properties.getMaxOperationCount()),
                 metrics.getIfAvailable(() -> HttpObservationMetrics.NONE),
                 properties.getLogInterval());
         return new ReactionObservingClientHttpRequestInterceptor(httpActionObserver,

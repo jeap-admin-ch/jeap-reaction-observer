@@ -28,7 +28,7 @@ class HttpActionObserverTest {
     private final ObservedReactions reactions = new ObservedReactions();
     private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     private final HttpActionObserver observer = new HttpActionObserver(reactions::recorder, new HttpTargetNaming(false),
-            new HttpTargetRegistry(MAX_TARGET_COUNT), new MicrometerHttpObservationMetrics(meterRegistry), LOG_INTERVAL);
+            new HttpTargetRegistry(MAX_TARGET_COUNT), unlimitedOperations(), new MicrometerHttpObservationMetrics(meterRegistry), LOG_INTERVAL);
 
     @ParameterizedTest
     @ValueSource(ints = {200, 204, 302, 400, 401, 404, 409, 500, 502, 503})
@@ -204,7 +204,7 @@ class HttpActionObserverTest {
     @Test
     void portIsPartOfTheTargetIfConfigured() {
         HttpActionObserver observerWithPort = new HttpActionObserver(reactions::recorder, new HttpTargetNaming(true),
-                new HttpTargetRegistry(MAX_TARGET_COUNT), HttpObservationMetrics.NONE, LOG_INTERVAL);
+                new HttpTargetRegistry(MAX_TARGET_COUNT), unlimitedOperations(), HttpObservationMetrics.NONE, LOG_INTERVAL);
 
         reactions.inTrigger(() -> observerWithPort.onResponse("GET", URI.create("http://localhost:8095/jme-ros-external/api/ratings/1"), 200, null));
 
@@ -262,6 +262,145 @@ class HttpActionObserverTest {
                 .isEqualTo(MAX_TARGET_COUNT + 2.0);
     }
 
+    /**
+     * A target that names a different operation with every response must not create a new action - and with it
+     * a new reaction - per call.
+     */
+    @Test
+    void newOperationLimitPerTarget_targetNamingANewOperationWithEveryResponse_furtherNamesBecomeTheCoarseAction() {
+        HttpActionObserver limitedObserver = observerAcceptingOperations(3, 100);
+
+        for (int i = 0; i < 10; i++) {
+            limitedObserver.onResponse("GET", PARTNER_URI, 200, operationHeader("partner-service GET /api/operation-" + i));
+        }
+
+        assertThat(reactions.identified()).containsExactly(
+                Reaction.actionOnly(Observation.ofHttpRequest("partner-service GET /api/operation-0")),
+                Reaction.actionOnly(Observation.ofHttpRequest("partner-service GET /api/operation-1")),
+                Reaction.actionOnly(Observation.ofHttpRequest("partner-service GET /api/operation-2")),
+                Reaction.actionOnly(Observation.ofHttpRequest(PARTNER_COARSE_GET)));
+        assertThat(unidentifiedCalls("operation_limit")).isEqualTo(7);
+        assertThat(unidentifiedCalls("no_header") + unidentifiedCalls("invalid_header")).isZero();
+        assertNoActionDropped();
+    }
+
+    @Test
+    void newOperationLimitPerTarget_acceptedOperationsAndOtherTargetsAreNotAffected() {
+        HttpActionObserver limitedObserver = observerAcceptingOperations(1, 100);
+        URI otherUri = URI.create("https://other.example.org/other-service/api/things/1");
+        limitedObserver.onResponse("GET", PARTNER_URI, 200, PARTNER_HEADER);
+        reactions.clear();
+
+        reactions.inTrigger(() -> {
+            limitedObserver.onResponse("POST", PARTNER_URI, 200, operationHeader("partner-service POST /api/partners"));
+            limitedObserver.onResponse("GET", PARTNER_URI, 200, PARTNER_HEADER);
+            limitedObserver.onResponse("GET", otherUri, 200, operationHeader("other-service GET /api/things/{}"));
+        });
+
+        assertThat(reactions.actionFqnsOfSingleReaction()).containsExactly(
+                "//partner.example.org/partner-service POST /{*}", PARTNER_OPERATION, "other-service GET /api/things/{}");
+        assertThat(unidentifiedCalls("operation_limit")).isEqualTo(1);
+    }
+
+    /**
+     * The name a target gives its operation does not decide which target it is counted for: a target cannot get
+     * around its limit by naming operations of other components.
+     */
+    @Test
+    void newOperationLimitPerTarget_countsByTheCalledTarget_notByTheComponentTheNameClaims() {
+        HttpActionObserver limitedObserver = observerAcceptingOperations(1, 100);
+
+        reactions.inTrigger(() -> {
+            limitedObserver.onResponse("GET", PARTNER_URI, 200, operationHeader("component-a GET /api/x"));
+            limitedObserver.onResponse("GET", PARTNER_URI, 200, operationHeader("component-b GET /api/x"));
+        });
+
+        assertThat(reactions.actionFqnsOfSingleReaction()).containsExactly("component-a GET /api/x", PARTNER_COARSE_GET);
+    }
+
+    /**
+     * An operation that is accepted is an action already: every target may name it, also one that may not
+     * contribute a new name any more.
+     */
+    @Test
+    void acceptedOperation_isAFineActionFromEveryTarget() {
+        HttpActionObserver limitedObserver = observerAcceptingOperations(1, 100);
+        URI otherUri = URI.create("https://other.example.org/partner-service/api/partners/42");
+        String otherOperation = "partner-service DELETE /api/partners/{}";
+
+        reactions.inTrigger(() -> {
+            limitedObserver.onResponse("GET", PARTNER_URI, 200, PARTNER_HEADER);
+            limitedObserver.onResponse("GET", otherUri, 200, PARTNER_HEADER);
+            limitedObserver.onResponse("DELETE", otherUri, 200, operationHeader(otherOperation));
+            limitedObserver.onResponse("DELETE", PARTNER_URI, 200, operationHeader(otherOperation));
+        });
+
+        assertThat(reactions.actionFqnsOfSingleReaction()).containsExactly(PARTNER_OPERATION, otherOperation);
+        assertNoMetricCounted();
+    }
+
+    @Test
+    void operationLimitInTotal_manyTargetsNamingOneOperationEach_furtherNamesBecomeCoarseActions() {
+        HttpActionObserver limitedObserver = observerAcceptingOperations(100, 2);
+
+        reactions.inTrigger(() -> {
+            for (int i = 0; i < 3; i++) {
+                limitedObserver.onResponse("POST", URI.create("https://subscriber-" + i + ".example.org/api/callback"), 200,
+                        operationHeader("subscriber-" + i + " POST /api/callback"));
+            }
+        });
+
+        assertThat(reactions.actionFqnsOfSingleReaction()).containsExactly(
+                "subscriber-0 POST /api/callback", "subscriber-1 POST /api/callback", "//subscriber-2.example.org POST /{*}");
+        assertThat(unidentifiedCalls("operation_limit")).isEqualTo(1);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {500, 503})
+    void operationOverTheLimit_statusFrom500_executionIsDiscarded(int status) {
+        HttpActionObserver limitedObserver = observerAcceptingOperations(1, 100);
+        limitedObserver.onResponse("GET", PARTNER_URI, 200, PARTNER_HEADER);
+        reactions.clear();
+
+        reactions.inTrigger(() -> {
+            reactions.recorder().onAction(MESSAGE_ACTION);
+            limitedObserver.onResponse("GET", PARTNER_URI, status, operationHeader("partner-service GET /api/other"));
+        });
+
+        assertThat(reactions.identified()).isEmpty();
+        assertThat(reactions.countsSinceLastCall()).isEmpty();
+        assertThat(unidentifiedCalls("operation_limit")).isEqualTo(1);
+        assertThat(droppedCalls("call_failed")).isEqualTo(1);
+    }
+
+    @Test
+    void operationOverTheLimit_targetOverTheLimitToo_noAction() {
+        HttpActionObserver limitedObserver = new HttpActionObserver(reactions::recorder, new HttpTargetNaming(false),
+                new HttpTargetRegistry(0), new HttpOperationRegistry(1, 100), new MicrometerHttpObservationMetrics(meterRegistry),
+                LOG_INTERVAL);
+
+        reactions.inTrigger(() -> {
+            limitedObserver.onResponse("GET", PARTNER_URI, 200, PARTNER_HEADER);
+            limitedObserver.onResponse("GET", PARTNER_URI, 200, operationHeader("partner-service GET /api/other"));
+        });
+
+        assertThat(reactions.actionFqnsOfSingleReaction()).containsExactly(PARTNER_OPERATION);
+        assertThat(unidentifiedCalls("operation_limit")).isEqualTo(1);
+        assertThat(droppedCalls("target_limit"))
+                .describedAs("The coarse action taking the place of the operation is subject to the target limit")
+                .isEqualTo(1);
+    }
+
+    @Test
+    void operationLimit_zero_noFineActions() {
+        HttpActionObserver limitedObserver = observerAcceptingOperations(0, 100);
+
+        reactions.inTrigger(() -> limitedObserver.onResponse("GET", PARTNER_URI, 200, PARTNER_HEADER));
+
+        assertThat(reactions.actionFqnsOfSingleReaction()).containsExactly(PARTNER_COARSE_GET);
+        assertThat(unidentifiedCalls("operation_limit")).isEqualTo(1);
+    }
+
     @Test
     void failedCall_doesNotTakeOneOfTheTargets() {
         for (int i = 0; i < MAX_TARGET_COUNT; i++) {
@@ -305,9 +444,25 @@ class HttpActionObserverTest {
     }
 
     @Test
+    void uriWithoutHost_operationNamesAreLimitedToo() {
+        HttpActionObserver limitedObserver = observerAcceptingOperations(1, 100);
+        URI uriWithoutHost = URI.create("/relative/api/x");
+
+        reactions.inTrigger(() -> {
+            limitedObserver.onResponse("GET", uriWithoutHost, 200, PARTNER_HEADER);
+            limitedObserver.onResponse("GET", uriWithoutHost, 200, operationHeader("partner-service GET /api/other"));
+        });
+
+        assertThat(reactions.actionFqnsOfSingleReaction())
+                .describedAs("Without a host there is no coarse action to take the place of the operation")
+                .containsExactly(PARTNER_OPERATION);
+        assertThat(unidentifiedCalls("operation_limit")).isEqualTo(1);
+    }
+
+    @Test
     void withoutMeterRegistry_observesAsUsual() {
         HttpActionObserver observerWithoutMetrics = new HttpActionObserver(reactions::recorder, new HttpTargetNaming(false),
-                new HttpTargetRegistry(MAX_TARGET_COUNT), HttpObservationMetrics.NONE, LOG_INTERVAL);
+                new HttpTargetRegistry(MAX_TARGET_COUNT), unlimitedOperations(), HttpObservationMetrics.NONE, LOG_INTERVAL);
 
         reactions.inTrigger(() -> observerWithoutMetrics.onResponse("GET", PARTNER_URI, 404, null));
         reactions.inTrigger(() -> observerWithoutMetrics.onNoResponse("GET", PARTNER_URI));
@@ -334,7 +489,7 @@ class HttpActionObserverTest {
             }
         };
         HttpActionObserver observerWithFailingMetrics = new HttpActionObserver(reactions::recorder, new HttpTargetNaming(false),
-                new HttpTargetRegistry(MAX_TARGET_COUNT), failingMetrics, LOG_INTERVAL);
+                new HttpTargetRegistry(MAX_TARGET_COUNT), unlimitedOperations(), failingMetrics, LOG_INTERVAL);
 
         reactions.inTrigger(() -> {
             reactions.recorder().onAction(MESSAGE_ACTION);
@@ -356,17 +511,32 @@ class HttpActionObserverTest {
 
     @Test
     void metrics_allCountersAreRegisteredAtStartup() {
-        assertThat(meterRegistry.getMeters()).hasSize(6);
+        assertThat(meterRegistry.getMeters()).hasSize(7);
         assertNoMetricCounted();
     }
 
     private void assertNoMetricCounted() {
-        assertThat(unidentifiedCalls("no_header") + unidentifiedCalls("invalid_header") + unidentifiedCalls("no_response")).isZero();
+        assertThat(unidentifiedCalls("no_header") + unidentifiedCalls("invalid_header") + unidentifiedCalls("operation_limit")
+                + unidentifiedCalls("no_response")).isZero();
         assertNoActionDropped();
     }
 
     private void assertNoActionDropped() {
         assertThat(droppedCalls("call_failed") + droppedCalls("target_limit") + droppedCalls("http_action_limit")).isZero();
+    }
+
+    private HttpActionObserver observerAcceptingOperations(int maxNewOperationCountPerTarget, int maxOperationCount) {
+        return new HttpActionObserver(reactions::recorder, new HttpTargetNaming(false), new HttpTargetRegistry(MAX_TARGET_COUNT),
+                new HttpOperationRegistry(maxNewOperationCountPerTarget, maxOperationCount),
+                new MicrometerHttpObservationMetrics(meterRegistry), LOG_INTERVAL);
+    }
+
+    private static HttpOperationRegistry unlimitedOperations() {
+        return new HttpOperationRegistry(Integer.MAX_VALUE, Integer.MAX_VALUE);
+    }
+
+    private static String operationHeader(String operation) {
+        return "%\"" + operation + "\"";
     }
 
     private double unidentifiedCalls(String reason) {

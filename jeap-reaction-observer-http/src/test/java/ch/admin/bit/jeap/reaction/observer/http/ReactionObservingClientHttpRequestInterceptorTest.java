@@ -59,7 +59,7 @@ class ReactionObservingClientHttpRequestInterceptorTest {
 
     private final ObservedReactions reactions = new ObservedReactions();
     private final HttpActionObserver observer = new HttpActionObserver(reactions::recorder, new HttpTargetNaming(false),
-            new HttpTargetRegistry(MAX_TARGET_COUNT), HttpObservationMetrics.NONE, LOG_INTERVAL);
+            new HttpTargetRegistry(MAX_TARGET_COUNT), unlimitedOperations(), HttpObservationMetrics.NONE, LOG_INTERVAL);
     private final RestClient.Builder restClientBuilder = RestClient.builder()
             .requestInterceptor(new ReactionObservingClientHttpRequestInterceptor(observer, ReactionModel.V2, LOG_INTERVAL));
     private final MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
@@ -194,7 +194,7 @@ class ReactionObservingClientHttpRequestInterceptorTest {
     void retryInsideOfTheClient_onlyTheFinalOutcomeCounts_executionIsNotDiscarded() {
         SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
         HttpActionObserver observerWithMetrics = new HttpActionObserver(reactions::recorder, new HttpTargetNaming(false),
-                new HttpTargetRegistry(MAX_TARGET_COUNT), new MicrometerHttpObservationMetrics(meterRegistry), LOG_INTERVAL);
+                new HttpTargetRegistry(MAX_TARGET_COUNT), unlimitedOperations(), new MicrometerHttpObservationMetrics(meterRegistry), LOG_INTERVAL);
         ClientHttpRequestInterceptor retryOnceOnServerError = (request, body, execution) -> {
             ClientHttpResponse response = execution.execute(request, body);
             if (!response.getStatusCode().is5xxServerError()) {
@@ -274,7 +274,7 @@ class ReactionObservingClientHttpRequestInterceptorTest {
     void timeoutWhileReadingTheStatus_isAFailedCall() throws IOException {
         SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
         HttpActionObserver observerWithMetrics = new HttpActionObserver(reactions::recorder, new HttpTargetNaming(false),
-                new HttpTargetRegistry(MAX_TARGET_COUNT), new MicrometerHttpObservationMetrics(meterRegistry), LOG_INTERVAL);
+                new HttpTargetRegistry(MAX_TARGET_COUNT), unlimitedOperations(), new MicrometerHttpObservationMetrics(meterRegistry), LOG_INTERVAL);
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setReadTimeout(Duration.ofMillis(300));
         RestClient client = RestClient.builder()
@@ -437,7 +437,7 @@ class ReactionObservingClientHttpRequestInterceptorTest {
     void failureOfTheObservation_doesNotAffectTheCall() {
         HttpActionObserver failingObserver = new HttpActionObserver(() -> {
             throw new IllegalStateException("no recorder");
-        }, new HttpTargetNaming(false), new HttpTargetRegistry(MAX_TARGET_COUNT), HttpObservationMetrics.NONE, LOG_INTERVAL);
+        }, new HttpTargetNaming(false), new HttpTargetRegistry(MAX_TARGET_COUNT), unlimitedOperations(), HttpObservationMetrics.NONE, LOG_INTERVAL);
         RestClient.Builder builder = RestClient.builder()
                 .requestInterceptor(new ReactionObservingClientHttpRequestInterceptor(failingObserver, ReactionModel.V2, LOG_INTERVAL));
         MockRestServiceServer failingObserverServer = MockRestServiceServer.bindTo(builder).build();
@@ -470,7 +470,7 @@ class ReactionObservingClientHttpRequestInterceptorTest {
         })) {
             ReactionRecorder recorder = new ReactionRecorder(blockingService);
             HttpActionObserver blockingObserver = new HttpActionObserver(() -> recorder, new HttpTargetNaming(false),
-                    new HttpTargetRegistry(MAX_TARGET_COUNT), HttpObservationMetrics.NONE, LOG_INTERVAL);
+                    new HttpTargetRegistry(MAX_TARGET_COUNT), unlimitedOperations(), HttpObservationMetrics.NONE, LOG_INTERVAL);
             RestClient.Builder builder = RestClient.builder()
                     .requestInterceptor(new ReactionObservingClientHttpRequestInterceptor(blockingObserver, ReactionModel.V2, LOG_INTERVAL));
             MockRestServiceServer blockingServer = MockRestServiceServer.bindTo(builder).build();
@@ -498,12 +498,16 @@ class ReactionObservingClientHttpRequestInterceptorTest {
         return result.get();
     }
 
+    private static HttpOperationRegistry unlimitedOperations() {
+        return new HttpOperationRegistry(Integer.MAX_VALUE, Integer.MAX_VALUE);
+    }
+
     /**
      * @return a client whose call is observed and answered with the response
      */
     private RestClient clientReturning(ClientHttpResponse response, MeterRegistry meterRegistry) {
         HttpActionObserver observerWithMetrics = new HttpActionObserver(reactions::recorder, new HttpTargetNaming(false),
-                new HttpTargetRegistry(MAX_TARGET_COUNT), new MicrometerHttpObservationMetrics(meterRegistry), LOG_INTERVAL);
+                new HttpTargetRegistry(MAX_TARGET_COUNT), unlimitedOperations(), new MicrometerHttpObservationMetrics(meterRegistry), LOG_INTERVAL);
         return RestClient.builder()
                 .requestInterceptor(new ReactionObservingClientHttpRequestInterceptor(observerWithMetrics, ReactionModel.V2, LOG_INTERVAL))
                 .requestInterceptor((request, body, execution) -> response)

@@ -2,7 +2,7 @@
 
 Every jEAP service answers a request carrying a `JEAP-REACTION-MODEL-VERSION` request header with a
 `JEAP-REACTION-OBSERVATION` response header naming the operation it was called on. A consumer takes that
-name unchanged as its action, and the jEAP Reaction Observer Service links it to the provider's trigger.
+name unchanged as its action (within its [limits](http-requests.md#limits-of-the-observation)), and the jEAP Reaction Observer Service links it to the provider's trigger.
 This lets consumer and provider agree on one name for a REST operation without either side guessing the
 other's routing.
 

@@ -22,7 +22,7 @@ class MicrometerHttpObservationMetrics implements HttpObservationMetrics {
     MicrometerHttpObservationMetrics(MeterRegistry meterRegistry) {
         for (UnidentifiedCallReason reason : UnidentifiedCallReason.values()) {
             unidentifiedCalls.put(reason, Counter.builder(UNIDENTIFIED_HTTP_CALLS)
-                    .description("Outgoing HTTP requests whose operation the provider did not name")
+                    .description("Outgoing HTTP requests that were not identified by an operation name of the provider")
                     .tag(REASON_TAG, reason.tagValue())
                     .register(meterRegistry));
         }

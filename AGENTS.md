@@ -80,7 +80,12 @@ Kafka or Avro (enforced by a Maven Enforcer rule), as it is meant to be added to
 - Bounded by design: at most `MAX_REACTION_COUNT` (4096) distinct reactions and `MAX_MESSAGING_ACTION_COUNT`
   (100) message actions per trigger are tracked, to cap memory use; HTTP request actions have their own
   budget (`MAX_HTTP_ACTION_COUNT`, 100 per trigger) and coarse actions are named for a limited number of
-  targets (`jeap.reaction.observer.http.max-target-count`, 100 by default).
+  targets (`jeap.reaction.observer.http.max-target-count`, 100 by default). The operation names taken from
+  response headers form one stock shared by all targets: a called target may contribute a limited number of
+  new names (`jeap.reaction.observer.http.max-new-operation-count-per-target`, 100 by default), an accepted
+  name may be named by every target, and the stock as a whole is limited (`...max-operation-count`, 1000 by
+  default); a name that is not accepted is treated like a header that cannot be used. Whatever comes from
+  another service and becomes part of an action name needs such a bound.
 - The settings of the library as a whole are in the module `configuration`: `ReactionObserverProperties`
   (`jeap.reaction.observer.model-version`) and, for `jeap.reaction.observer.enabled`, the condition
   `@ConditionalOnReactionObserverEnabled` (a `@ConditionalOnProperty`: every value but `true` switches the

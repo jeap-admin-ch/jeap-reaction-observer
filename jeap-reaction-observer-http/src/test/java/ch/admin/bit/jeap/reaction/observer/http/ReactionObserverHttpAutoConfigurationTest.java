@@ -46,9 +46,13 @@ class ReactionObserverHttpAutoConfigurationTest {
     private static final String MODEL_VERSION_2 = "jeap.reaction.observer.model-version=2";
     private static final String URL = "https://partner.example.org/api/partners/42";
     private static final String MAX_TARGET_COUNT = "jeap.reaction.observer.http.max-target-count=";
+    private static final String MAX_NEW_OPERATION_COUNT_PER_TARGET = "jeap.reaction.observer.http.max-new-operation-count-per-target=";
+    private static final String MAX_OPERATION_COUNT = "jeap.reaction.observer.http.max-operation-count=";
     private static final String LOG_INTERVAL = "jeap.reaction.observer.http.log-interval=";
     private static final String TARGET_LIMIT_LOG_PREFIX = "for the maximum of";
     private static final String TARGET_LIMIT_LOG = TARGET_LIMIT_LOG_PREFIX + " 1 targets";
+    private static final String OPERATION_LIMIT_LOG_PREFIX = "name operations that are not accepted";
+    private static final String OPERATION_LIMIT_LOG = "a target has already contributed the maximum of 1 new operation names";
     private static final String FAILED_CALL_LOG = "It is not observed as an action";
     private static final String OBSERVATION_FAILURE_LOG = "Failed to observe an outgoing HTTP request";
 
@@ -327,6 +331,88 @@ class ReactionObserverHttpAutoConfigurationTest {
     }
 
     @Test
+    void operationLimits_are100NewPerTargetAnd1000InTotalByDefault() {
+        contextRunner.withPropertyValues(MODEL_VERSION_2).run(context -> {
+            ReactionObserverHttpProperties properties = context.getBean(ReactionObserverHttpProperties.class);
+            assertThat(properties.getMaxNewOperationCountPerTarget()).isEqualTo(100);
+            assertThat(properties.getMaxOperationCount()).isEqualTo(1000);
+        });
+    }
+
+    /**
+     * A target that names a different operation with every response must not create a new action per call.
+     */
+    @Test
+    void newOperationLimitPerTarget_configured_limitsTheNewOperationNamesOfATarget() {
+        contextRunner.withPropertyValues(MODEL_VERSION_2, MAX_NEW_OPERATION_COUNT_PER_TARGET + 2)
+                .withBean(MeterRegistry.class, SimpleMeterRegistry::new)
+                .run(context -> {
+                    ObservedReactions reactions = context.getBean(ObservedReactions.class);
+                    reactions.inTrigger(() -> requestOperations(context, URL, "operation-0", "operation-1", "operation-2", "operation-3"));
+
+                    assertThat(reactions.actionFqnsOfSingleReaction())
+                            .containsExactly("operation-0", "operation-1", "//partner.example.org GET /{*}");
+                    assertThat(context.getBean(MeterRegistry.class).get("jeap.reaction.observer.unidentified.http.calls")
+                            .tag("reason", "operation_limit").counter().count())
+                            .isEqualTo(2);
+                });
+    }
+
+    @Test
+    void operationLimitInTotal_configured_limitsTheOperationNamesOfAllTargets() {
+        contextRunner.withPropertyValues(MODEL_VERSION_2, MAX_OPERATION_COUNT + 1).run(context -> {
+            ObservedReactions reactions = context.getBean(ObservedReactions.class);
+            reactions.inTrigger(() -> {
+                requestOperations(context, "https://first.example.org/api/x", "first-operation");
+                requestOperations(context, "https://second.example.org/api/x", "second-operation");
+            });
+
+            assertThat(reactions.actionFqnsOfSingleReaction()).containsExactly("first-operation", "//second.example.org GET /{*}");
+        });
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {MAX_NEW_OPERATION_COUNT_PER_TARGET, MAX_OPERATION_COUNT})
+    @ExtendWith(OutputCaptureExtension.class)
+    void operationLimit_zero_noFineActions_andNoWarning(String operationLimit, CapturedOutput output) {
+        contextRunner.withPropertyValues(MODEL_VERSION_2, operationLimit + 0).run(context -> {
+            ObservedReactions reactions = context.getBean(ObservedReactions.class);
+            reactions.inTrigger(() -> requestOperations(context, URL, "operation-0"));
+
+            assertThat(reactions.actionFqnsOfSingleReaction()).containsExactly("//partner.example.org GET /{*}");
+        });
+        assertThat(output.getOut())
+                .describedAs("0 switches operation names off on purpose")
+                .doesNotContain(OPERATION_LIMIT_LOG_PREFIX);
+    }
+
+    @Test
+    void operationLimit_negative_failsTheStart() {
+        contextRunner.withPropertyValues(MODEL_VERSION_2, MAX_NEW_OPERATION_COUNT_PER_TARGET + -1)
+                .run(context -> assertThat(context).hasFailed().getFailure()
+                        .hasStackTraceContaining("The maximum number of new operations per target must not be negative: -1"));
+        contextRunner.withPropertyValues(MODEL_VERSION_2, MAX_OPERATION_COUNT + -1)
+                .run(context -> assertThat(context).hasFailed().getFailure()
+                        .hasStackTraceContaining("The maximum number of operations must not be negative: -1"));
+    }
+
+    /**
+     * One request to the URL per operation, each answered with a response that names the operation.
+     */
+    private static void requestOperations(ApplicationContext context, String url, String... operations) {
+        RestClient.Builder builder = context.getBean(RestClient.Builder.class);
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        for (String operation : operations) {
+            server.expect(once(), requestTo(url))
+                    .andRespond(withSuccess().header("JEAP-REACTION-OBSERVATION", "%\"" + operation + "\""));
+        }
+        RestClient restClient = builder.build();
+        for (int i = 0; i < operations.length; i++) {
+            restClient.get().uri(url).retrieve().toBodilessEntity();
+        }
+    }
+
+    @Test
     void logInterval_isOneMinuteByDefault() {
         contextRunner.withPropertyValues(MODEL_VERSION_2).run(context ->
                 assertThat(context.getBean(ReactionObserverHttpProperties.class).getLogInterval()).isEqualTo(Duration.ofMinutes(1)));
@@ -346,6 +432,7 @@ class ReactionObserverHttpAutoConfigurationTest {
 
         assertThat(output.getOut())
                 .containsOnlyOnce(TARGET_LIMIT_LOG)
+                .containsOnlyOnce(OPERATION_LIMIT_LOG)
                 .containsOnlyOnce(FAILED_CALL_LOG)
                 .containsOnlyOnce(OBSERVATION_FAILURE_LOG);
     }
@@ -356,13 +443,14 @@ class ReactionObserverHttpAutoConfigurationTest {
         causeEveryRecurringLogEntryThreeTimes(LOG_INTERVAL + 0);
 
         assertThat(output.getOut().split(TARGET_LIMIT_LOG, -1)).hasSize(4);
+        assertThat(output.getOut().split(OPERATION_LIMIT_LOG, -1)).hasSize(4);
         assertThat(output.getOut().split(FAILED_CALL_LOG, -1)).hasSize(4);
         assertThat(output.getOut().split(OBSERVATION_FAILURE_LOG, -1)).hasSize(4);
     }
 
     /**
-     * Three requests to a target over the limit, three failed calls and three failures of the observation
-     * itself (there is no recorder).
+     * Three requests to a target over the limit, three responses naming an operation over the limit, three
+     * failed calls and three failures of the observation itself (there is no recorder).
      */
     private void causeEveryRecurringLogEntryThreeTimes(String... properties) {
         contextRunner.withPropertyValues(MODEL_VERSION_2, MAX_TARGET_COUNT + 1).withPropertyValues(properties).run(context -> {
@@ -370,6 +458,8 @@ class ReactionObserverHttpAutoConfigurationTest {
             requestThreeTimes(context, withSuccess());
             requestThreeTimes(context, withStatus(HttpStatus.SERVICE_UNAVAILABLE));
         });
+        contextRunner.withPropertyValues(MODEL_VERSION_2, MAX_NEW_OPERATION_COUNT_PER_TARGET + 1).withPropertyValues(properties)
+                .run(context -> requestOperations(context, URL, "operation-0", "operation-1", "operation-2", "operation-3"));
         new ApplicationContextRunner()
                 .withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, ReactionObserverHttpAutoConfiguration.class))
                 .withPropertyValues(MODEL_VERSION_2).withPropertyValues(properties)
@@ -400,7 +490,7 @@ class ReactionObserverHttpAutoConfigurationTest {
                 .run(context -> {
                     assertThat(context.getBean(HttpObservationMetrics.class)).isInstanceOf(MicrometerHttpObservationMetrics.class);
                     MeterRegistry meterRegistry = context.getBean(MeterRegistry.class);
-                    assertThat(meterRegistry.get("jeap.reaction.observer.unidentified.http.calls").counters()).hasSize(3);
+                    assertThat(meterRegistry.get("jeap.reaction.observer.unidentified.http.calls").counters()).hasSize(4);
                     assertThat(meterRegistry.get("jeap.reaction.observer.dropped.http.calls").counters()).hasSize(3);
                 });
     }

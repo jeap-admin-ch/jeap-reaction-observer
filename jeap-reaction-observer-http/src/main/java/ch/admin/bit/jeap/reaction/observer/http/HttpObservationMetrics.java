@@ -23,7 +23,7 @@ interface HttpObservationMetrics {
     };
 
     /**
-     * Why the provider did not name the operation of a call.
+     * Why a call was not identified by an operation name of the provider.
      */
     enum UnidentifiedCallReason {
         /**
@@ -34,6 +34,12 @@ interface HttpObservationMetrics {
          * The response has an observation header that cannot be used.
          */
         INVALID_HEADER,
+        /**
+         * The response names an operation that is not accepted: the called target already contributed the
+         * maximum number of new operation names, or the instance already accepted the maximum number of
+         * different operation names in total.
+         */
+        OPERATION_LIMIT,
         /**
          * There was no response.
          */
@@ -67,8 +73,8 @@ interface HttpObservationMetrics {
     }
 
     /**
-     * Diagnosis: counts each call whose operation the provider did not name, exactly once and at the time of
-     * the call - also outside a trigger and in an execution that is discarded.
+     * Diagnosis: counts each call that was not identified by an operation name of the provider, exactly once
+     * and at the time of the call - also outside a trigger and in an execution that is discarded.
      */
     void unidentifiedCall(UnidentifiedCallReason reason);
 
