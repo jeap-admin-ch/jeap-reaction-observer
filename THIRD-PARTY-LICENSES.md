@@ -173,6 +173,7 @@ Apache License Version 2.0
  * spring-boot-micrometer-observation - [org.springframework.boot:spring-boot-micrometer-observation](https://spring.io/projects/spring-boot)
  * spring-boot-persistence - [org.springframework.boot:spring-boot-persistence](https://spring.io/projects/spring-boot)
  * spring-boot-restclient - [org.springframework.boot:spring-boot-restclient](https://spring.io/projects/spring-boot)
+ * spring-boot-restclient-test - [org.springframework.boot:spring-boot-restclient-test](https://spring.io/projects/spring-boot)
  * spring-boot-resttestclient - [org.springframework.boot:spring-boot-resttestclient](https://spring.io/projects/spring-boot)
  * spring-boot-security - [org.springframework.boot:spring-boot-security](https://spring.io/projects/spring-boot)
  * spring-boot-security-oauth2-client - [org.springframework.boot:spring-boot-security-oauth2-client](https://spring.io/projects/spring-boot)
