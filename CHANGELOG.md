@@ -20,8 +20,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 - `ReactionIdentifiedEvent` 2.1.0 and `ReactionsObservedEvent` 1.1.0 report the reaction model version; the
-  idempotence id of `ReactionIdentifiedEvent` contains the model version and the time at which the instance
-  began to report its reactions
+  idempotence id of `ReactionIdentifiedEvent` contains the service instance identifier, the model version and
+  the time at which the instance began to report its reactions, so that it identifies one report.
+  `ReactionIdentifiedEventBuilder.buildEvent` takes these three values as further parameters
 - New module `jeap-reaction-observer-configuration` (part of the starter) with the settings of the library as a
   whole
 - The `ReactionIdentifiedEvent` is published in a thread of its own: a slow or unreachable Kafka broker no

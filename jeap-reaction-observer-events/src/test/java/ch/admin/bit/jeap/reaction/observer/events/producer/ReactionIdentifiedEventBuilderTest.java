@@ -9,12 +9,16 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 class ReactionIdentifiedEventBuilderTest {
 
     private static final Instant IDENTIFICATION_START = Instant.parse("2026-10-26T04:12:33.987Z");
+    private static final UUID SERVICE_INSTANCE = UUID.fromString("019a1f3c-5b7e-7c41-9d2a-6f0e8b4c1a55");
+    private static final UUID OTHER_SERVICE_INSTANCE = UUID.fromString("019a1f3c-5b7e-7d93-b1c6-2a7f9e0d3b84");
     private static final Observation TRIGGER = Observation.ofEvent("OrderCreatedEvent", "orders");
     private static final Observation MESSAGE_ACTION = Observation.ofCommand("CreateDeclarationCommand", null, "declarations");
     private static final Observation HTTP_ACTION = Observation.ofHttpRequest("partner-service POST /api/jobs/{}:cancel");
@@ -28,24 +32,61 @@ class ReactionIdentifiedEventBuilderTest {
     }
 
     @Test
-    void buildEvent_idempotenceIdContainsModelVersionAndIdentificationStart() {
+    void buildEvent_idempotenceIdContainsServiceInstanceModelVersionAndIdentificationStart() {
         Reaction reaction = new Reaction(TRIGGER, List.of(MESSAGE_ACTION));
 
         ReactionIdentifiedEvent event = buildEvent(reaction, ReactionModel.V2.version());
 
         assertThat(event.getIdentity().getIdempotenceId())
-                .isEqualTo("ri_test-service_" + reaction.id() + "_v2_20261026T041233Z");
+                .isEqualTo("ri_test-service_" + SERVICE_INSTANCE + "_" + reaction.id() + "_v2_20261026T041233Z");
     }
 
     @Test
-    void buildEvent_idempotenceIdDiffersByModelVersionAndIdentificationStart() {
+    void createIdempotenceId_differsByModelVersionAndIdentificationStart() {
         Reaction reaction = new Reaction(TRIGGER, List.of(MESSAGE_ACTION));
 
-        String id = ReactionIdentifiedEventBuilder.createIdempotenceId("svc", reaction.id(), 1, IDENTIFICATION_START);
-        String idOtherVersion = ReactionIdentifiedEventBuilder.createIdempotenceId("svc", reaction.id(), 2, IDENTIFICATION_START);
-        String idOtherIdentificationStart = ReactionIdentifiedEventBuilder.createIdempotenceId("svc", reaction.id(), 1, IDENTIFICATION_START.plusSeconds(1));
+        String id = ReactionIdentifiedEventBuilder.createIdempotenceId("svc", SERVICE_INSTANCE, reaction.id(), 1, IDENTIFICATION_START);
+        String idOtherVersion = ReactionIdentifiedEventBuilder.createIdempotenceId("svc", SERVICE_INSTANCE, reaction.id(), 2, IDENTIFICATION_START);
+        String idOtherIdentificationStart = ReactionIdentifiedEventBuilder.createIdempotenceId("svc", SERVICE_INSTANCE, reaction.id(), 1, IDENTIFICATION_START.plusSeconds(1));
 
         assertThat(List.of(id, idOtherVersion, idOtherIdentificationStart)).doesNotHaveDuplicates();
+    }
+
+    /**
+     * The identification start is formatted to whole seconds: it does not tell apart two instances that start
+     * within the same second, the instance identifier does.
+     */
+    @Test
+    void createIdempotenceId_differsForInstancesStartedWithinTheSameSecond() {
+        Reaction reaction = new Reaction(TRIGGER, List.of(MESSAGE_ACTION));
+        Instant sameSecond = IDENTIFICATION_START.plusMillis(1);
+
+        String id = ReactionIdentifiedEventBuilder.createIdempotenceId("svc", SERVICE_INSTANCE, reaction.id(), 2, IDENTIFICATION_START);
+        String idSameInstance = ReactionIdentifiedEventBuilder.createIdempotenceId("svc", SERVICE_INSTANCE, reaction.id(), 2, sameSecond);
+        String idOtherInstance = ReactionIdentifiedEventBuilder.createIdempotenceId("svc", OTHER_SERVICE_INSTANCE, reaction.id(), 2, sameSecond);
+
+        assertThat(idSameInstance).describedAs("the same second gives the same id").isEqualTo(id);
+        assertThat(idOtherInstance).describedAs("another instance gives another id").isNotEqualTo(id);
+    }
+
+    @Test
+    void buildEvent_withoutServiceInstanceIdentifier_fails() {
+        Reaction reaction = new Reaction(TRIGGER, List.of(MESSAGE_ACTION));
+
+        assertThatNullPointerException()
+                .isThrownBy(() -> ReactionIdentifiedEventBuilder.buildEvent("test-system", "test-service", null,
+                        reaction, 2, IDENTIFICATION_START))
+                .withMessageContaining("serviceInstanceIdentifier");
+    }
+
+    @Test
+    void buildEvent_withoutIdentificationStart_fails() {
+        Reaction reaction = new Reaction(TRIGGER, List.of(MESSAGE_ACTION));
+
+        assertThatNullPointerException()
+                .isThrownBy(() -> ReactionIdentifiedEventBuilder.buildEvent("test-system", "test-service",
+                        SERVICE_INSTANCE, reaction, 2, null))
+                .withMessageContaining("identificationStart");
     }
 
     @Test
@@ -75,6 +116,6 @@ class ReactionIdentifiedEventBuilderTest {
     }
 
     private static ReactionIdentifiedEvent buildEvent(Reaction reaction, int reactionModelVersion) {
-        return ReactionIdentifiedEventBuilder.buildEvent("test-system", "test-service", reaction, reactionModelVersion, IDENTIFICATION_START);
+        return ReactionIdentifiedEventBuilder.buildEvent("test-system", "test-service", SERVICE_INSTANCE, reaction, reactionModelVersion, IDENTIFICATION_START);
     }
 }

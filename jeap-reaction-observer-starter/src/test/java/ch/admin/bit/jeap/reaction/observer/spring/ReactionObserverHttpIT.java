@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.annotation.DirtiesContext;
 
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -89,11 +90,16 @@ class ReactionObserverHttpIT extends ReactionKafkaTestBase {
                 tuple("http_request", JOB_OPERATION, "http_request:partner-service GET /api/jobs/{}%3Acancel/100%25/\"café\""));
         assertThat(reaction.getActions().get(1).getProps()).isEmpty();
         assertThat(identified.getPayload().getReactionModelVersion()).isEqualTo(2);
-        assertThat(identified.getIdentity().getIdempotenceId())
-                .startsWith("ri_test-service-name_" + reactionId + "_v2_")
-                .matches(".*_v2_\\d{8}T\\d{6}Z");
 
         ReactionsObservedEvent observed = reactionEventsTestConsumer.awaitReactionsObservedEventForReactionId(reactionId);
+        // Both events name the same service instance: the idempotence id of the ReactionsObservedEvent ends with
+        // the identifier of the instance
+        String observedIdempotenceId = observed.getIdentity().getIdempotenceId();
+        String serviceInstanceIdentifier = observedIdempotenceId.substring(observedIdempotenceId.length() - 36);
+        assertThat(serviceInstanceIdentifier).matches("[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}");
+        assertThat(identified.getIdentity().getIdempotenceId())
+                .matches("ri_test-service-name_" + serviceInstanceIdentifier + "_" + Pattern.quote(reactionId)
+                        + "_v2_\\d{8}T\\d{6}Z");
         assertThat(observed.getPayload().getReactionModelVersion()).isEqualTo(2);
         Observation observation = observed.getPayload().getObservations().stream()
                 .filter(o -> o.getReactionId().equals(reactionId))

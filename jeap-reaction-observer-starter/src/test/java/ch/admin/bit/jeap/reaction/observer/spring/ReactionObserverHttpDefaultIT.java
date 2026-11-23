@@ -19,6 +19,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 
+import java.util.regex.Pattern;
+
 import static ch.admin.bit.jeap.reaction.observer.test.HttpRequestObservations.REACTION_MODEL_VERSION_HEADER;
 import static ch.admin.bit.jeap.reaction.observer.test.HttpRequestObservations.fqn;
 import static ch.admin.bit.jeap.reaction.observer.test.HttpRequestObservations.withObservation;
@@ -73,11 +75,16 @@ class ReactionObserverHttpDefaultIT extends ReactionKafkaTestBase {
         assertThat(reaction.getActions()).extracting("type", "id")
                 .containsExactly(tuple("event", messageActionId));
         assertThat(identified.getPayload().getReactionModelVersion()).isEqualTo(1);
-        assertThat(identified.getIdentity().getIdempotenceId())
-                .startsWith("ri_test-service-name_" + reactionId + "_v1_")
-                .matches(".*_v1_\\d{8}T\\d{6}Z");
 
         ReactionsObservedEvent observed = reactionEventsTestConsumer.awaitReactionsObservedEventForReactionId(reactionId);
+        // Both events name the same service instance: the idempotence id of the ReactionsObservedEvent ends with
+        // the identifier of the instance
+        String observedIdempotenceId = observed.getIdentity().getIdempotenceId();
+        String serviceInstanceIdentifier = observedIdempotenceId.substring(observedIdempotenceId.length() - 36);
+        assertThat(serviceInstanceIdentifier).matches("[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}");
+        assertThat(identified.getIdentity().getIdempotenceId())
+                .matches("ri_test-service-name_" + serviceInstanceIdentifier + "_" + Pattern.quote(reactionId)
+                        + "_v1_\\d{8}T\\d{6}Z");
         assertThat(observed.getPayload().getReactionModelVersion()).isEqualTo(1);
         assertThat(observed.getPayload().getObservations()).extracting(Observation::getReactionId).containsExactly(reactionId);
         assertThat(observed.getPayload().getObservations()).extracting(Observation::getCount).containsExactly(1);

@@ -1,7 +1,6 @@
 package ch.admin.bit.jeap.reaction.observer.http;
 
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 
@@ -13,7 +12,7 @@ class ThrottledLog {
 
     private final long intervalNanos;
     private final LongSupplier nanoTime;
-    private final AtomicLong occurrences = new AtomicLong();
+    private long occurrences;
     private long lastLogged;
     private boolean neverLogged = true;
 
@@ -33,19 +32,31 @@ class ThrottledLog {
      * @param logEntry writes the log entry, gets the number of occurrences since the last entry including this one
      */
     void log(LongConsumer logEntry) {
-        occurrences.incrementAndGet();
-        long now = nanoTime.getAsLong();
-        if (isDue(now)) {
-            logEntry.accept(occurrences.getAndSet(0));
+        long occurrencesToLog = countOccurrence();
+        if (occurrencesToLog > 0) {
+            logEntry.accept(occurrencesToLog);
         }
     }
 
-    private synchronized boolean isDue(long now) {
-        if (neverLogged || now - lastLogged >= intervalNanos) {
-            neverLogged = false;
-            lastLogged = now;
-            return true;
+    /**
+     * Reads the time, counts an occurrence and decides whether a log entry is due, in one step: an occurrence is
+     * counted for exactly one log entry, no log entry is due without an occurrence, and no occurrence is judged
+     * by a time that lies before the one of the last log entry.
+     * <p>
+     * Without an interval every occurrence is due, whatever the time.
+     *
+     * @return the number of occurrences to log now, 0 if no log entry is due
+     */
+    private synchronized long countOccurrence() {
+        long now = nanoTime.getAsLong();
+        occurrences++;
+        if (intervalNanos > 0 && !neverLogged && now - lastLogged < intervalNanos) {
+            return 0;
         }
-        return false;
+        neverLogged = false;
+        lastLogged = now;
+        long occurrencesToLog = occurrences;
+        occurrences = 0;
+        return occurrencesToLog;
     }
 }

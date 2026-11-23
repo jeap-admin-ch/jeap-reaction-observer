@@ -58,8 +58,8 @@ public class KafkaEventProducer implements ReactionIdentifiedListener {
     @Override
     public void onReactionIdentified(Reaction reaction) {
         ReactionIdentifiedEvent event = ReactionIdentifiedEventBuilder
-                .buildEvent(kafkaProperties.getSystemName(), kafkaProperties.getServiceName(), reaction,
-                        reactionModelVersion, identificationStart);
+                .buildEvent(kafkaProperties.getSystemName(), kafkaProperties.getServiceName(),
+                        serviceInstanceIdentifier, reaction, reactionModelVersion, identificationStart);
         sendSync(config.getReactionIdentifiedTopic(), createKey(reaction), event);
     }
 

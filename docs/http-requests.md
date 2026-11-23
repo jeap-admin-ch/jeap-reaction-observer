@@ -346,11 +346,13 @@ If the service has a `MeterRegistry`, two counters are published. Neither carrie
 - The counters of unidentified actions in `ReactionsObservedEvent` are never set and stay 0. The value 0 does
   not prove that a reaction is complete.
 - The idempotence id of `ReactionIdentifiedEvent` is
-  `ri_<service>_<reactionId>_v<reactionModelVersion>_<identificationStart>`. The identification start is the
-  time at which the instance began to report its reactions, in UTC (`20261026T041233Z`); currently that is
-  the start of the instance. A consumer
-  processing the events idempotently therefore does not drop the report of the same reaction after a restart
-  or with another model version.
+  `ri_<service>_<serviceInstanceIdentifier>_<reactionId>_v<reactionModelVersion>_<identificationStart>`. The
+  service instance identifier is a UUID generated at the start of the instance, the same as in the idempotence
+  id of `ReactionsObservedEvent`. The identification start is the time at which the instance began to report
+  its reactions, in UTC (`20261026T041233Z`); currently that is the start of the instance. The id identifies
+  one report: a service reports the same reaction once per instance, again after a restart, and with another
+  model version after an upgrade or a rollback, each time with an id of its own. A consumer processing the
+  events idempotently processes each of these reports once.
 
 ## Testing
 
