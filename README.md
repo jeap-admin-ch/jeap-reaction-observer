@@ -25,6 +25,7 @@ Start with [Getting started](docs/getting-started.md), then follow the links bel
 | Configuration reference (`jeap.reaction.observer.*`)        | [docs/configuration.md](docs/configuration.md)             |
 | System behaviour documentation (the bigger picture)         | [docs/system-behaviour-documentation.md](docs/system-behaviour-documentation.md) |
 | HTTP requests as actions (reaction model version 2, fine and coarse actions, failed calls, metrics) | [docs/http-requests.md](docs/http-requests.md) |
+| HTTP requests as triggers (reaction model version 2, which requests are observed, when a request counts) | [docs/http-triggers.md](docs/http-triggers.md) |
 | Response header (`JEAP-REACTION-OBSERVATION`, operation naming and mapping versions, delivered to every service by the jEAP parent) | [docs/response-header.md](docs/response-header.md) |
 
 ## Modules
@@ -37,7 +38,7 @@ modules is `ch.admin.bit.jeap`; the version is managed by the jEAP Spring Boot p
 | `jeap-reaction-observer-core`     | Domain model and recording logic: `Observation`, `Reaction`, `ReactionRecorder`, `ReactionObserverService` |
 | `jeap-reaction-observer-configuration` | Settings of the library as a whole (`jeap.reaction.observer.enabled`, `jeap.reaction.observer.model-version`), shared by the modules below; no dependency on jEAP Messaging |
 | `jeap-reaction-observer-messaging` | jEAP Messaging callback (`ObserverKafkaMessageCallback`) that feeds the recorder from Kafka send/consume hooks |
-| `jeap-reaction-observer-http`     | Observes outgoing HTTP requests of `RestClient`s as actions; no dependency on jEAP Messaging, used through the starter - see [docs/http-requests.md](docs/http-requests.md) |
+| `jeap-reaction-observer-http`     | Observes outgoing HTTP requests of `RestClient`s as actions and incoming HTTP requests as triggers; no dependency on jEAP Messaging, used through the starter - see [docs/http-requests.md](docs/http-requests.md) and [docs/http-triggers.md](docs/http-triggers.md) |
 | `jeap-reaction-observer-events`   | Builds and publishes the `ReactionIdentifiedEvent` / `ReactionsObservedEvent` Kafka events, plus the scheduler |
 | `jeap-reaction-observer-starter`  | Spring Boot auto-configuration; the main consumer-facing artifact                                |
 | `jeap-reaction-observer-test`     | Test fixtures (`ReactionKafkaTestBase`, test event builders, consumers)                          |

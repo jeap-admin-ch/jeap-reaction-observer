@@ -4,8 +4,9 @@ With reaction model version 2 the Reaction Observer records the outgoing HTTP re
 actions, next to the events and commands it sends. A reaction chain then no longer ends where a service
 calls another one over REST instead of sending a message.
 
-This page describes the consumer side. The provider side - the response header naming the called operation -
-is described in [Response header](response-header.md).
+This page describes the consumer side. The provider side is described in
+[Response header](response-header.md) - the response header naming the called operation - and in
+[HTTP requests as triggers](http-triggers.md) - the provider observing the request as a trigger.
 
 The consumer side is the module `jeap-reaction-observer-http`. It is part of `jeap-reaction-observer-starter`
 and is to be used through it: on its own, without the recorder of the starter, it does not work.
@@ -39,13 +40,23 @@ jeap:
 `jeap.reaction.observer.model-version` chooses the version of the reaction model the service observes by:
 `1` or `2`. The default is `1`: a Reaction Observer Service that does not support reaction model version 2
 cannot process observations of the type `http_request`. Choose `2` once the Reaction Observer Service of your
-platform supports model version 2. A version that does not exist fails the start of the service.
+platform is of version 12.26.0 or later: model version 2 also observes incoming requests as triggers, and the id
+of a reaction with such a trigger can be longer than 1024 characters, which the service stores as of version
+12.26.0. A service that already observes by model version 2 with a version of this library before 11.39.0
+has to wait the same way: upgrade the Reaction Observer Service of the platform first, then deploy the new
+version of the library. A version that does not exist fails the start of the service.
+
+All modules of the Reaction Observer have to be of the same version, including
+`jeap-reaction-observer-header-starter`, which the jEAP parent adds to every service. Choose the version with
+the property `jeap-reaction-observer.version` of the jEAP parent, not with a version at a single dependency: a
+service that combines modules of different versions can fail at its start, for example with a
+`NoSuchMethodError`.
 
 | `jeap.reaction.observer.enabled` | `jeap.reaction.observer.model-version` | Behaviour |
 |---|---|---|
 | any value but `true` | any | Nothing is observed, no events are published, and `model-version` is not read |
 | `true` (default) | `1` (default) | Reaction model version 1: no request header, no HTTP request actions. Both reaction events report `reactionModelVersion` 1 |
-| `true` | `2` | Reaction model version 2: HTTP requests are observed. Both reaction events report `reactionModelVersion` 2 |
+| `true` | `2` | Reaction model version 2: HTTP requests are observed, outgoing ones as actions and incoming ones as [triggers](http-triggers.md). Both reaction events report `reactionModelVersion` 2 |
 
 ## What is observed
 
@@ -152,9 +163,9 @@ response without a valid header: with a status below 500 the request becomes a c
 500 or above it is a failed call.
 
 Like a message sent outside of a trigger, a request outside of a trigger (for example in a scheduler) becomes
-an action-only reaction, unless it fails (see [Failed calls](#failed-calls-discard-the-execution)). Incoming
-HTTP requests are no triggers yet: until a later version observes them, the requests a service makes while it
-handles an incoming request are outside of a trigger, too, and their actions become action-only reactions.
+an action-only reaction, unless it fails (see [Failed calls](#failed-calls-discard-the-execution)). An
+incoming HTTP request is a trigger, too: the requests a service makes while it handles an incoming request are
+actions of that request, see [HTTP requests as triggers](http-triggers.md).
 
 The observation never affects the outcome of the request: request, response and exceptions pass unchanged,
 and a failure of the observation itself is logged and otherwise ignored. The one difference concerns request
@@ -325,7 +336,7 @@ If the service has a `MeterRegistry`, two counters are published. Neither carrie
 | Request factory that reads the response only when its status is asked for (`SimpleClientHttpRequestFactory` with a request body; Spring Boot chooses it only if no other HTTP client is available, for example on a runtime without the module `java.net.http`) | The observation reads the status first. If that fails, the call is a failed call and the response passes unchanged: reading it, the caller gets an exception of the same class and with the same message as without the observation, but HttpURLConnection gives a new instance with the original one as its cause. A runtime exception while the response is read (for example from a custom `CookieHandler`) reaches a caller that reads the headers first (as `retrieve().body(...)` does) wrapped in a `RuntimeException` |
 | Request body | Spring buffers the request body of a `RestClient` in memory as soon as the client has an interceptor, and this library adds one. A client that streamed a large upload before no longer does so with reaction model version 2, unless it is created without the observation, see [Clients without observation](#clients-without-observation) |
 | Calls in other threads (`@Async`, own executors) | Not assigned to the trigger of the calling thread; they become action-only reactions |
-| Calls while an incoming HTTP request is handled | Incoming requests are no triggers yet: the calls are outside of a trigger, and their actions become action-only reactions until a later version observes incoming requests as triggers |
+| Calls while an incoming HTTP request is handled | The request is the trigger of these calls, see [HTTP requests as triggers](http-triggers.md). If the request is handled asynchronously or is not observed for another reason, the calls are outside of a trigger and become action-only reactions |
 | Conditional calls without header | Every conditional coarse action splits a reaction into variants; k independent ones yield up to 2^k reactions. A 401 of a provider that otherwise delivers the header yields a rare reaction with a coarse action |
 | A target names many different operations, for example because its paths are not templated (`GET /api/partners/4711`) | The names are accepted up to the limits of operation names, each as an action of its own. Combined with the triggers that call the target and with each other they can still make up more reactions than the 4096 an instance identifies |
 | Calls to a varying selection of targets (for example webhooks per subscriber) | Each selection is a reaction of its own. Once an instance has identified 4096 reactions, it identifies no new ones - of messages neither - until it restarts; logged once as a warning |
@@ -335,7 +346,7 @@ If the service has a `MeterRegistry`, two counters are published. Neither carrie
 | Context | Only recognised in front of an API root. The same service shows up as `//<host>/<context>` for calls to an API root and as `//<host>` for all other paths. A first segment in front of an API root that is no context (`/rest/api/...`, `/v3/api-docs`) is read as one; if it is variable, it takes up targets until the limit is reached |
 | Stages | Hosts differ per stage, so the names of coarse actions and the ids of reactions containing them cannot be compared between environments |
 | Actuator, `/error` and springdoc endpoints of a provider | The header module does not name them; calls to them are coarse actions if the status is below 500. A status of 500 or above discards the execution, see [Failed calls](#failed-calls-discard-the-execution) |
-| Consumer and provider counts | The consumer records the action also for 4xx and 5xx answers; the numbers of both sides do not match |
+| Consumer and provider counts | The consumer records the action also for 4xx answers and for 5xx answers that name the operation in the header (a 5xx without an accepted name is a failed call), the provider counts a request only if it was handled successfully, see [When a request counts](http-triggers.md#when-a-request-counts); the numbers of both sides do not match |
 | Shared HTTP caches between consumer and provider | Not supported, see [Response header](response-header.md) |
 | Providers without this library | A provider reports reactions only with the Reaction Observer itself. With the header module alone, its operations appear as actions of its consumers, but the chain ends there; without the header module, calls to it can only be observed as coarse actions |
 
@@ -365,6 +376,7 @@ If the service has a `MeterRegistry`, two counters are published. Neither carrie
 
 ## Related
 
+- [HTTP requests as triggers](http-triggers.md)
 - [Response header](response-header.md)
 - [How it works](how-it-works.md)
 - [Configuration reference](configuration.md)

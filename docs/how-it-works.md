@@ -7,7 +7,8 @@ The Reaction Observer records, per consumed message, how the service responds to
   (currently the `topic`). Each observation has a deterministic id derived from these values.
   With reaction model version 2 an outgoing HTTP request is an observation, too (`HTTP_REQUEST`), see
   [HTTP requests as actions](http-requests.md).
-- **Trigger** — the observation of a *consumed* message that begins a reaction.
+- **Trigger** — the observation of a *consumed* message that begins a reaction, or with reaction model
+  version 2 of an incoming HTTP request, see [HTTP requests as triggers](http-triggers.md).
 - **Action** — the observation of a message *produced* while handling a trigger, or with reaction model
   version 2 of an outgoing HTTP request.
 - **Reaction** — a trigger together with the (de-duplicated, ordered) set of actions produced in
@@ -76,5 +77,6 @@ observed in a timeframe, no event is sent. A final event is also published on gr
 
 - [Getting started](getting-started.md)
 - [HTTP requests as actions](http-requests.md)
+- [HTTP requests as triggers](http-triggers.md)
 - [Configuration reference](configuration.md)
 - [System behaviour documentation](system-behaviour-documentation.md)

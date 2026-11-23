@@ -33,7 +33,7 @@ public final class ReactionIdentifiedEvents {
     public static Optional<Observation> trigger(ReactionIdentifiedEvent event) {
         return switch (event.getPayload().getReaction()) {
             case TriggerOnly triggerOnly -> Optional.of(triggerOnly.getTrigger());
-            case ActionOnly ignored -> Optional.empty();
+            case ActionOnly _ -> Optional.empty();
             case Reaction reaction -> Optional.of(reaction.getTrigger());
             default -> throw unexpectedReaction(event);
         };
@@ -44,7 +44,7 @@ public final class ReactionIdentifiedEvents {
      */
     public static List<Observation> actions(ReactionIdentifiedEvent event) {
         return switch (event.getPayload().getReaction()) {
-            case TriggerOnly ignored -> List.of();
+            case TriggerOnly _ -> List.of();
             case ActionOnly actionOnly -> List.of(actionOnly.getAction());
             case Reaction reaction -> reaction.getActions();
             default -> throw unexpectedReaction(event);

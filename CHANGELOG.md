@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [11.39.0] - 2026-11-24
+
+### Added
+- Reaction model version 2: the incoming HTTP requests of a servlet web application are observed as triggers,
+  named like the operation in the `JEAP-REACTION-OBSERVATION` response header. The messages a service sends and
+  the HTTP requests it makes while it handles a request are the actions of that trigger. A request with a status
+  below 400 always counts, one with a status of 400 to 499 only if it caused at least one action, one with a
+  status of 500 or above or with an exception that leaves Spring MVC never. Requests handled asynchronously are
+  not observed as triggers, their actions are reported without a trigger. Like the outgoing requests this needs
+  `jeap.reaction.observer.model-version=2`, and a Reaction Observer Service of version 12.26.0 or later. See [docs/http-triggers.md](docs/http-triggers.md)
+- A warning at the start of a service whose incoming requests are observed, if the name of the provider
+  (`jeap.rest.tracing.application-name`, or else `spring.application.name`) differs from the name of the
+  component its reactions are reported for (`jeap.messaging.kafka.service-name`)
+
+### Changed
+- Services that already observe by reaction model version 2: upgrade the Reaction Observer Service of the
+  platform to version 12.26.0 or later before deploying this version. As of this version, model version 2 also
+  observes incoming requests as triggers, and the id of a reaction with such a trigger can be longer than 1024
+  characters, which the Reaction Observer Service stores as of version 12.26.0
+- No operation name starts or ends with a space any more, in the response header neither: spaces at the start
+  and the end of the complete name are dropped, and a provider name (`jeap.rest.tracing.application-name`, or
+  else `spring.application.name`) of spaces only counts as not set. A consumer drops these spaces from the name
+  it reads from the header, so that consumer and provider identified such an operation differently
+- All modules of the Reaction Observer have to be of the same version, to be chosen with the property
+  `jeap-reaction-observer.version` of the jEAP parent: `jeap-reaction-observer-http` of this version does not
+  start with an older `jeap-reaction-observer-header-starter`
+- The interceptor that sets the response header comes first also among the interceptors a service registers
+  with the highest precedence, unless the service orders their `WebMvcConfigurer` with the highest precedence
+  as well or the configurer implements `PriorityOrdered`
+- An operation whose name a caller does not accept - with a control character, a line or paragraph separator or
+  an invisible format character such as a zero-width non-joiner, or with a provider name starting with `//` - is
+  not named any more: its responses carry no `JEAP-REACTION-OBSERVATION` header and its requests are not
+  observed as triggers. A warning names such an operation once, for at most 20 operations. Callers already
+  treated their calls to it like calls answered without the header, so provider and caller identify it alike
+- Only requests with a standard method (`GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`, `TRACE`),
+  compared exactly as sent, are named: a request with another method, which a mapping without a method condition
+  accepts, gets no `JEAP-REACTION-OBSERVATION` header and is not observed as a trigger. Made-up methods cannot
+  make an unbounded number of operations and triggers out of one mapping. This changes the response header of
+  every provider, whatever its reaction model version: an extension method such as WebDAV `PROPFIND`, or a
+  standard method in another case such as `post` (up to now named as `POST`), was named by older providers and
+  is not any more. While provider versions are mixed, a caller observes such a call as a fine action or as a
+  call without the header, depending on the provider's version, see
+  [docs/response-header.md](docs/response-header.md#contract)
+- `jeap-reaction-observer-http` depends on `jeap-reaction-observer-header-starter`, which names the operations.
+  A service that uses `jeap-reaction-observer-starter` without the jEAP parent gets the header module with it,
+  whatever its reaction model version: it answers requests carrying `JEAP-REACTION-MODEL-VERSION` with the
+  `JEAP-REACTION-OBSERVATION` response header, adds `Vary`, and protects the header with a filter. Services with
+  the jEAP parent have the header module already. The header can be switched off with
+  `jeap.reaction.observer.header.enabled=false`, see [docs/response-header.md](docs/response-header.md)
+
 ## [11.38.0] - 2026-11-24
 
 ### Changed

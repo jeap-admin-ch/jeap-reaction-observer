@@ -32,7 +32,9 @@ import static org.assertj.core.api.Assertions.assertThat;
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
         properties = {
                 "spring.application.name=provider-app",
-                "jeap.reaction.observer.model-version=2"
+                "jeap.reaction.observer.model-version=2",
+                // The test is about the calling side: the requests the provider receives are not observed as triggers
+                "spring.autoconfigure.exclude=ch.admin.bit.jeap.reaction.observer.http.ReactionObserverHttpTriggerAutoConfiguration"
         })
 class ReactionObserverHttpServiceGroupIT {
 

@@ -8,10 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.EnumMap;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SequencedSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -76,10 +75,25 @@ class ReactionRecorderState {
         return !triggerInvocationFrameStack.isEmpty() && triggerInvocationFrameStack.peek().discarded;
     }
 
+    boolean currentTriggerHasActions() {
+        return !triggerInvocationFrameStack.isEmpty() && !triggerInvocationFrameStack.peek().actions.isEmpty();
+    }
+
+    /**
+     * @return the actions of the current trigger with the number of times each has been recorded, in the order
+     * in which they were recorded first; empty outside a trigger
+     */
+    Map<Observation, Integer> currentActionOccurrences() {
+        if (triggerInvocationFrameStack.isEmpty()) {
+            return Map.of();
+        }
+        return new LinkedHashMap<>(triggerInvocationFrameStack.peek().actions);
+    }
+
     public Reaction toReaction() {
         List<Observation> actions = List.of();
         if (!triggerInvocationFrameStack.isEmpty()) {
-            actions = List.copyOf(triggerInvocationFrameStack.peek().actions);
+            actions = List.copyOf(triggerInvocationFrameStack.peek().actions.keySet());
         }
         return new Reaction(currentTrigger(), actions);
     }
@@ -121,10 +135,12 @@ class ReactionRecorderState {
     private static class TriggerInvocationFrame {
 
         private final Observation trigger;
-        // Using LinkedHashSet to maintain the order of actions as they are recorded, but avoiding duplicates.
-        // Duplicates might occur if the same action is recorded multiple times within the same trigger invocation,
-        // for example due to events that trigger some sort of scheduler that might produce the same action many times.
-        private final SequencedSet<Observation> actions = new LinkedHashSet<>();
+        // The actions in the order in which they were recorded first, each with the number of times it has been
+        // recorded. The same action might be recorded many times within the same trigger invocation, for example
+        // due to events that trigger some sort of scheduler that might produce the same action many times. A
+        // reaction has such an action once; the number is needed if the trigger is abandoned and its actions are
+        // recorded again without it.
+        private final Map<Observation, Integer> actions = new LinkedHashMap<>();
         private final Map<ActionBudget, Integer> actionCounts = new EnumMap<>(ActionBudget.class);
         private boolean discarded = false;
 
@@ -133,7 +149,8 @@ class ReactionRecorderState {
         }
 
         boolean recordAction(Observation action) {
-            if (actions.contains(action)) {
+            if (actions.containsKey(action)) {
+                actions.merge(action, 1, Integer::sum);
                 return true;
             }
             ActionBudget budget = ActionBudget.of(action.type());
@@ -142,7 +159,7 @@ class ReactionRecorderState {
                 budget.logWarningOnce(trigger);
                 return false;
             }
-            actions.add(action);
+            actions.put(action, 1);
             actionCounts.put(budget, actionCount + 1);
             return true;
         }

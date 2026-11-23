@@ -42,8 +42,8 @@ public class ReactionObserverHttpProperties {
 
     /**
      * How often the observation of HTTP requests writes each of its recurring log entries (failed call, target
-     * over the limit, operation name over the limit, failure of the observation itself): at most once per
-     * interval, with the number of occurrences since the last entry. A number without a unit is in seconds.
+     * over the limit, operation name over the limit, failure of the observation of an outgoing or an incoming
+     * request): at most once per interval, with the number of occurrences since the last entry. A number without a unit is in seconds.
      * With 0 every occurrence is logged.
      */
     @DurationUnit(ChronoUnit.SECONDS)

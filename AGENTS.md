@@ -8,7 +8,8 @@ consuming service, read [README.md](README.md) and the [docs/](docs/) folder ins
 jEAP Reaction Observer is a multi-module Maven library that detects, tracks, and documents how a
 microservice reacts to incoming events and commands. It hooks into jEAP Messaging: for each consumed
 message (the *trigger*) it records the events/commands the service produces in response (the
-*actions*), forms a *reaction*, and publishes that runtime behaviour as Kafka events. The events are
+*actions*), forms a *reaction*, and publishes that runtime behaviour as Kafka events. With reaction model
+version 2 an incoming HTTP request is a trigger and an outgoing HTTP request an action, too. The events are
 consumed by the jEAP Reaction Observer Service and feed the jEAP ArchRepo system-behaviour
 documentation. Recording is best-effort and must never affect business logic.
 
@@ -19,7 +20,10 @@ operation; a reaction caused by a temporary technical failure would document a f
 Hence an execution with a failed HTTP call is deliberately not reported at all, and what happens inside an
 HTTP client before it returns to the service (for example a retry by a client interceptor) is deliberately
 not observed - only the outcome of the call as the client returns it to the service counts. Missing a recovered temporary failure is intended,
-not a defect. See [docs/http-requests.md](docs/http-requests.md).
+not a defect. See [docs/http-requests.md](docs/http-requests.md). An incoming HTTP request counts as a reaction
+by a fixed rule on the status of its response (below 400 always, 400 to 499 only with at least one action, 500
+or above and unhandled exceptions never); the rule is deliberately not configurable, so that services
+observing by the same reaction model version observe the same. See [docs/http-triggers.md](docs/http-triggers.md).
 
 ## Repository layout
 
@@ -28,7 +32,8 @@ pom.xml                              # Parent POM (packaging=pom); declares the 
 jeap-reaction-observer-core/         # Domain model + recording: Observation, Reaction, ReactionRecorder, ReactionObserverService
 jeap-reaction-observer-configuration/ # Settings of the library as a whole: ReactionObserverProperties, @ConditionalOnReactionObserverEnabled
 jeap-reaction-observer-messaging/    # ObserverKafkaMessageCallback: JeapKafkaMessageCallback feeding the recorder
-jeap-reaction-observer-http/         # Client interceptor observing outgoing RestClient requests as actions (reaction model version 2)
+jeap-reaction-observer-http/         # Reaction model version 2: client interceptor observing outgoing RestClient requests as actions,
+                                     # Spring MVC interceptor observing incoming requests as triggers
 jeap-reaction-observer-events/       # Event builders, KafkaEventProducer, ReactionsObservedEventScheduler, config properties
 jeap-reaction-observer-starter/      # @AutoConfiguration wiring; main consumer-facing artifact
 jeap-reaction-observer-test/         # Test fixtures (ReactionKafkaTestBase, test event builders, consumers)
@@ -38,7 +43,9 @@ Jenkinsfile, publiccode.yml, CHANGELOG.md, LICENSE
 
 Dependency direction: `core` ← `configuration` ← `messaging` / `events` / `http` ← `starter`. The `http` module
 and with it the `configuration` module must not depend on jEAP Messaging, Kafka or Avro (enforced by a Maven
-Enforcer rule in `http`). The `messaging` module bridges
+Enforcer rule in `http`). The `http` module depends on the `header-starter` module: a trigger is named by its
+`OperationNameResolver`, so that trigger and response header never differ - do not build operation names
+anywhere else. The `messaging` module bridges
 jEAP Messaging's `JeapKafkaMessageCallback` to the `core` recorder; the `events` module turns
 recorded reactions into Avro Kafka events (`reaction-identified-event`, `reactions-observed-event`).
 The `header-starter` module is independent: it must not depend on the other modules, jEAP Messaging,

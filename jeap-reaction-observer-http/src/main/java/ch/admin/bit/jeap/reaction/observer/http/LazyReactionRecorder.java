@@ -3,6 +3,7 @@ package ch.admin.bit.jeap.reaction.observer.http;
 import ch.admin.bit.jeap.reaction.observer.core.domain.ReactionRecorder;
 import org.springframework.beans.factory.ObjectProvider;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 /**
@@ -11,7 +12,7 @@ import java.util.function.Supplier;
 class LazyReactionRecorder implements Supplier<ReactionRecorder> {
 
     private final ObjectProvider<ReactionRecorder> provider;
-    private volatile ReactionRecorder reactionRecorder;
+    private final AtomicReference<ReactionRecorder> reactionRecorder = new AtomicReference<>();
 
     LazyReactionRecorder(ObjectProvider<ReactionRecorder> provider) {
         this.provider = provider;
@@ -19,10 +20,10 @@ class LazyReactionRecorder implements Supplier<ReactionRecorder> {
 
     @Override
     public ReactionRecorder get() {
-        ReactionRecorder recorder = reactionRecorder;
+        ReactionRecorder recorder = reactionRecorder.get();
         if (recorder == null) {
             recorder = provider.getObject();
-            reactionRecorder = recorder;
+            reactionRecorder.set(recorder);
         }
         return recorder;
     }

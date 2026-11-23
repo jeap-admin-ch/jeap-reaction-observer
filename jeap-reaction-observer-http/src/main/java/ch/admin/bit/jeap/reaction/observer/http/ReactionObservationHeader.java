@@ -1,5 +1,7 @@
 package ch.admin.bit.jeap.reaction.observer.http;
 
+import ch.admin.bit.jeap.reaction.observer.header.OperationNameRule;
+
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -37,10 +39,9 @@ record ReactionObservationHeader(Status status, String fqn) {
     }
 
     /**
-     * A longer FQN is invalid. Providers shorten their FQNs to 512 characters; the limit leaves a reserve and
-     * protects the consumer against oversized values.
+     * A longer FQN is invalid, see {@link OperationNameRule#MAX_LENGTH}.
      */
-    static final int MAX_FQN_LENGTH = 600;
+    static final int MAX_FQN_LENGTH = OperationNameRule.MAX_LENGTH;
     /**
      * Each character of an FQN takes at most 12 characters in the header (four percent-encoded UTF-8 bytes).
      * <p>
@@ -51,10 +52,10 @@ record ReactionObservationHeader(Status status, String fqn) {
      */
     private static final int MAX_VALUE_LENGTH = 12 * MAX_FQN_LENGTH + 64;
     /**
-     * The provider part of a coarse action starts with this prefix. A component name never does, so a header
-     * value starting with it is invalid - a provider cannot name a coarse action.
+     * The provider part of a coarse action starts with this prefix, see
+     * {@link OperationNameRule#COARSE_PROVIDER_PREFIX}.
      */
-    static final String COARSE_PROVIDER_PREFIX = "//";
+    static final String COARSE_PROVIDER_PREFIX = OperationNameRule.COARSE_PROVIDER_PREFIX;
 
     private static final ReactionObservationHeader ABSENT = new ReactionObservationHeader(Status.ABSENT, null);
     private static final ReactionObservationHeader INVALID = new ReactionObservationHeader(Status.INVALID, null);
@@ -73,53 +74,12 @@ record ReactionObservationHeader(Status status, String fqn) {
         if (displayString == null) {
             return INVALID;
         }
-        String fqn = stripSpaces(displayString);
-        if (!isAcceptableFqn(fqn)) {
+        // The provider names its operations by the same rule, so that a name it sends is never invalid here
+        String fqn = OperationNameRule.stripSpaces(displayString);
+        if (OperationNameRule.violation(fqn).isPresent()) {
             return INVALID;
         }
         return new ReactionObservationHeader(Status.VALID, fqn);
-    }
-
-    /**
-     * No operation name starts or ends with a space; a space there is dropped, so that it neither makes a name
-     * that looks the same a different one nor hides the prefix of a coarse action. Spaces are the Unicode space
-     * separators, so no-break spaces too, which {@link String#strip()} keeps; a line break or tab is no space
-     * and makes the name invalid, see {@link #isAcceptableFqn(String)}.
-     */
-    private static String stripSpaces(String name) {
-        int start = 0;
-        int end = name.length();
-        while (start < end && isSpace(name.codePointAt(start))) {
-            start += Character.charCount(name.codePointAt(start));
-        }
-        while (end > start && isSpace(name.codePointBefore(end))) {
-            end -= Character.charCount(name.codePointBefore(end));
-        }
-        return name.substring(start, end);
-    }
-
-    private static boolean isSpace(int codePoint) {
-        return Character.getType(codePoint) == Character.SPACE_SEPARATOR;
-    }
-
-    /**
-     * The name comes from another service and ends up in observation ids, events and logs, so the consumer does
-     * not take just anything: the name (without spaces at its start and end) must not be empty or oversized,
-     * must not claim to be a coarse action and must not contain characters that no operation name has and that
-     * break lines or are invisible: control characters (line breaks, tabs, ...), the Unicode line and paragraph
-     * separators and Unicode format characters (zero-width characters, direction overrides, ...).
-     */
-    private static boolean isAcceptableFqn(String fqn) {
-        return !fqn.isEmpty()
-                && fqn.length() <= MAX_FQN_LENGTH
-                && !fqn.startsWith(COARSE_PROVIDER_PREFIX)
-                && fqn.codePoints().noneMatch(ReactionObservationHeader::isControlOrInvisible);
-    }
-
-    private static boolean isControlOrInvisible(int codePoint) {
-        int type = Character.getType(codePoint);
-        return type == Character.CONTROL || type == Character.FORMAT
-                || type == Character.LINE_SEPARATOR || type == Character.PARAGRAPH_SEPARATOR;
     }
 
     boolean isValid() {

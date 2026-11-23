@@ -1,14 +1,49 @@
 package ch.admin.bit.jeap.reaction.observer.http;
 
+import ch.admin.bit.jeap.reaction.observer.core.domain.model.Observation;
+import ch.admin.bit.jeap.reaction.observer.header.OperationNameResolver;
 import ch.admin.bit.jeap.reaction.observer.http.ReactionObservationHeader.Status;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.servlet.HandlerMapping;
+import org.springframework.web.servlet.function.HandlerFunction;
+import org.springframework.web.servlet.function.ServerResponse;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ReactionObservationHeaderTest {
+
+    /**
+     * The reaction graph joins the call of a consumer with the request of the provider by the id of the
+     * observation. Both sides have to make the same id of the name of the operation, also if the provider is
+     * configured with a name that starts or ends with a space, or if the path of the operation ends with one.
+     */
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', quoteCharacter = '\'', textBlock = """
+            'order-service'        | '/api/orders'
+            ' order-service'       | '/api/orders'
+            'order-service '       | '/api/orders'
+            '\u00a0order-service'  | '/api/orders'
+            'order-service'        | '/api/orders\u00a0'
+            '\u2003order-service ' | '/api/orders\u2003/'
+            """)
+    void consumerAndProvider_identifyTheOperationAlike(String configuredProviderName, String pathPattern) {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/orders");
+        request.setAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE, pathPattern);
+        HandlerFunction<ServerResponse> handler = serverRequest -> ServerResponse.ok().build();
+        String providerFqn = new OperationNameResolver(configuredProviderName).resolve(request, handler).orElseThrow();
+
+        ReactionObservationHeader header = ReactionObservationHeader.parse("%\"" + providerFqn + "\"");
+
+        assertThat(header.isValid()).isTrue();
+        assertThat(Observation.ofHttpRequest(header.fqn()).id())
+                .describedAs("the id of the action of the consumer and of the trigger of the provider")
+                .isEqualTo(Observation.ofHttpRequest(providerFqn).id());
+    }
 
     /**
      * The shared test cases of docs/response-header.md: the encoder of the header module produces these values,
@@ -58,10 +93,7 @@ class ReactionObservationHeaderTest {
             "%\" %c2%a0%e2%80%af\""
     })
     void parse_nameWithControlOrInvisibleCharacter_isInvalid(String headerValue) {
-        ReactionObservationHeader header = ReactionObservationHeader.parse(headerValue);
-
-        assertThat(header.status()).isEqualTo(Status.INVALID);
-        assertThat(header.fqn()).isNull();
+        assertInvalid(headerValue);
     }
 
     @Test
@@ -150,10 +182,7 @@ class ReactionObservationHeaderTest {
             "not-a-display-string, %\"svc GET /api/a\""
     })
     void parse_malformedValue_isInvalid(String headerValue) {
-        ReactionObservationHeader header = ReactionObservationHeader.parse(headerValue);
-
-        assertThat(header.status()).isEqualTo(Status.INVALID);
-        assertThat(header.fqn()).isNull();
+        assertInvalid(headerValue);
     }
 
     @ParameterizedTest
@@ -194,5 +223,12 @@ class ReactionObservationHeaderTest {
 
         assertThat(ReactionObservationHeader.parse("%\"" + tooLong + "\"").status()).isEqualTo(Status.INVALID);
         assertThat(ReactionObservationHeader.parse("%\"" + wayTooLong + "\"").status()).isEqualTo(Status.INVALID);
+    }
+
+    private static void assertInvalid(String headerValue) {
+        ReactionObservationHeader header = ReactionObservationHeader.parse(headerValue);
+
+        assertThat(header.status()).isEqualTo(Status.INVALID);
+        assertThat(header.fqn()).isNull();
     }
 }

@@ -18,9 +18,17 @@ even services that do not otherwise use this library (mode "header only").
 | Response header | `JEAP-REACTION-OBSERVATION`, present only when the request carried the signal |
 | Value format | RFC 9651 Structured Field: a List with one Display String |
 
-This contract (request signal, value format, operation-naming rule below) is **frozen** from the first
-released version: providers running an old header module stay in service for a long time, so the wire
-format cannot change compatibly afterwards.
+The wire format (request signal and value format) is **frozen** from the first released version: providers
+running an old header module stay in service for a long time, so it cannot change compatibly afterwards.
+
+The [operation-naming rule](#operation-name-fqn) is stable too, but version 11.39.0 narrowed it. Callers see
+both rules side by side while providers are upgraded:
+
+| Change in 11.39.0 | Effect on callers while provider versions are mixed |
+|---|---|
+| Spaces at the start and end of a name are dropped | None: callers already drop them from the name they read |
+| An operation whose name a caller does not accept is not named | None: callers already rejected such a header value |
+| Only the exact standard methods are named (`GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`, `TRACE`, case-sensitive) | A call with another method - an extension method such as WebDAV `PROPFIND`, or a standard method in another case such as `post` - is a fine action with an older provider, and a call without the header with a provider of 11.39.0 or later: a coarse action for a status below 500, a failed call for a status of 500 or above. An annotated controller can declare only the standard methods, so such calls reach only mappings without a method condition and functional endpoints with a predicate for another method |
 
 ### Value format
 
@@ -59,12 +67,13 @@ fqn = "<provider> <METHOD> <pattern>[ ;v=<apiVersion>]"
 
 | Part | Rule |
 |---|---|
-| `<provider>` | `jeap.rest.tracing.application-name` (relaxed binding, so it matches `JEAP-APPLICATION-NAME`), falling back to `spring.application.name`. Blank or unresolvable values (e.g. `${spring.application.name}` without an application name) count as not set. If neither is set, a warning is logged at startup and no operation name is produced; startup never fails |
-| `<METHOD>` | HTTP method, uppercase |
+| `<provider>` | `jeap.rest.tracing.application-name` (relaxed binding, so it matches `JEAP-APPLICATION-NAME`), falling back to `spring.application.name`. Blank or unresolvable values (e.g. `${spring.application.name}` without an application name) count as not set. A name of spaces only counts as not set. If neither is set, a warning is logged at startup and no operation name is produced; startup never fails |
+| `<METHOD>` | HTTP method as sent. Only the standard methods Spring knows are named, compared exactly (methods are case-sensitive): `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`, `TRACE`. A mapping without a method condition accepts any method a client sends; a request with another method, also `post` or another case of a standard method, gets no header, so that made-up methods cannot make an unbounded number of operations out of one mapping. Up to 11.38.x the method was uppercased and every method was named, see [Contract](#contract) |
 | `<pattern>` | `HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE`, relative to the context path and the `DispatcherServlet` mapping |
 | Normalisation | `{name}` and `{name:regex}` → `{}`; `{*name}` → `{*}`; a trailing `/` is dropped, except for `/` itself |
 | `;v=<apiVersion>` | The declared `@RequestMapping(version = ...)` value (including composed annotations such as `@GetMapping` and inherited/interface mappings). A non-empty method version overrides the class version. The value is preserved verbatim, including `+` for baselines; omitted for unversioned mappings and all functional WebMvc.fn endpoints |
 | Length | FQNs over 512 characters are cut to `512 - 65` characters and suffixed with `~` + the lowercase hex SHA-256 of the *untruncated* FQN (65 characters), for a stable result of at most 512 characters. The limit counts UTF-16 characters of the unencoded FQN; the cut never splits a surrogate pair, and the encoded header value can be longer for non-ASCII names |
+| Spaces | No FQN starts or ends with a space: spaces (the Unicode space separators, no-break spaces too) at the start and the end of the complete name are dropped, wherever they come from - the name of the provider, the pattern or the API version. A consumer drops them from the name it reads from the header, so provider and consumer identify an operation alike |
 | Not part of the FQN | host, context path, query string, status code, path-variable names, client-requested API version |
 
 For example, requests for versions `1.3` and `1.5` matching a mapping declared with `version = "1.2+"`
@@ -80,8 +89,8 @@ module keeps `{*name}` as `{*}` because that is what Spring itself reports for a
 collapsing it would make two different operations look the same. 
 
 `OperationNameResolver` is the single place this naming rule and the exclusions below live, so the
-Reaction Observer core library's own trigger-capturing interceptor can reuse it unchanged
-instead of re-implementing it. There is no SPI between the two: both are released from this repository in
+trigger-capturing interceptor of the module `jeap-reaction-observer-http` (see
+[HTTP requests as triggers](http-triggers.md)) reuses it unchanged instead of re-implementing it. There is no SPI between the two: both are released from this repository in
 lockstep, so this class is not part of the frozen contract.
 
 ### What is observed
@@ -100,8 +109,9 @@ Standard Spring Boot 4 Actuator endpoints are outside the interceptor's handler 
 They therefore return no observation header without invoking `OperationNameResolver`. Their handlers
 live under `org.springframework.boot.webmvc.actuate.endpoint.web` and are additionally excluded by the
 resolver's Boot 4 package prefix. This protects callers that also reach the Actuator mapping, for example
-a trigger-capturing interceptor registered as a `MappedInterceptor` bean: every `AbstractHandlerMapping`,
-including `WebMvcEndpointHandlerMapping`, picks up such beans. Integration tests verify both the mapping
+an interceptor registered as a `MappedInterceptor` bean: every `AbstractHandlerMapping`, including
+`WebMvcEndpointHandlerMapping`, picks up such beans. The trigger-capturing interceptor is registered through
+the `InterceptorRegistry` like the one of this module, so it does not reach the Actuator mapping. Integration tests verify both the mapping
 boundary and the resolver exclusion using the real Boot health and links handlers obtained from
 `WebMvcEndpointHandlerMapping`.
 
@@ -144,13 +154,15 @@ first version that includes it.
 | Unhandled exception, container error dispatch to `/error` | Header and `Vary` present - re-applied from a request attribute if the container reset response headers before the error dispatch |
 | 401 from a security filter, 404 with no matching handler, 503 from an ingress/proxy | **No header** - `preHandle` never runs because no handler was ever resolved. The consumer names the call itself: a coarse action for a status below 500, a failed call that discards the execution for a status of 500 or above, see [HTTP requests as actions](http-requests.md) |
 | A BFF/aggregator copying a downstream response's headers onto its own | A copied downstream `JEAP-REACTION-OBSERVATION` value is always dropped (see `ProtectedObservationHeaderResponse`), so it can neither overwrite the service's own value nor reach the caller when the service sets none itself; this also holds when later filters such as Spring Security wrap the response again |
-| Application interceptors returning `false` from `preHandle` | Header and `Vary` present - this module's interceptor is registered with the highest precedence and runs first |
+| Application interceptors returning `false` from `preHandle` | Header and `Vary` present - this module's interceptor is registered with the highest precedence, through a `WebMvcConfigurer` ordered with the highest precedence, and runs first. Exception: an interceptor registered with the highest precedence through a configurer that is itself ordered with the highest precedence or implements `PriorityOrdered` runs before it, and if it rejects the request, no header is set |
 | Cacheable responses (without `no-store`) | `Vary: JEAP-REACTION-MODEL-VERSION` is added for every observed operation, merged with any existing `Vary` value, whether or not that particular request carried the signal - the response depends on the signal either way. Authenticated jEAP APIs already set `no-store` via Spring Security, so shared caching rarely applies |
-| `Callable`, `DeferredResult`, SSE | Header present - set on the initial `REQUEST` dispatch, before async processing starts; the trigger itself is not captured by this module |
+| `Callable`, `DeferredResult`, SSE | Header present - set on the initial `REQUEST` dispatch, before async processing starts; such a request is not observed as a trigger, see [HTTP requests as triggers](http-triggers.md#asynchronous-requests) |
 | Calls made in filters running before the `DispatcherServlet` | Outside this module's reach entirely |
+| An operation name a caller does not accept: with a control character, a line or paragraph separator or an invisible format character (for example a zero-width non-joiner in a path), or with a provider name starting with `//`, see [HTTP requests as actions](http-requests.md) | **No header**, and the request is not observed as a trigger, so that provider and caller never identify the operation differently. The caller treats the call like any response without the header: a coarse action for a status below 500, a failed call that discards the execution for a status of 500 or above. What the request causes is reported without a trigger. A warning names the handler and the operation once, with such characters shown as their code points (`[U+200C]`), for at most 20 operations |
 
 ## Related
 
 - [HTTP requests as actions](http-requests.md)
+- [HTTP requests as triggers](http-triggers.md)
 - [Configuration reference](configuration.md)
 - [How it works](how-it-works.md)

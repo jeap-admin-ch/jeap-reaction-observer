@@ -1,7 +1,6 @@
 package ch.admin.bit.jeap.reaction.observer.http;
 
 import ch.admin.bit.jeap.reaction.observer.core.domain.ReactionRecorder;
-import ch.admin.bit.jeap.reaction.observer.core.domain.model.Observation;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.ObservationType;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -41,7 +40,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
                 "spring.application.name=provider-app",
-                "jeap.reaction.observer.model-version=2"
+                "jeap.reaction.observer.model-version=2",
+                // The test is about the calling side: the requests the provider receives are not observed as triggers
+                "spring.autoconfigure.exclude=ch.admin.bit.jeap.reaction.observer.http.ReactionObserverHttpTriggerAutoConfiguration"
         })
 class ReactionObserverHttpProviderIT {
 
@@ -78,9 +79,9 @@ class ReactionObserverHttpProviderIT {
     @Test
     void providerAnswersWithAnErrorAndNamesTheOperation_fineAction() {
         reactions.inTrigger(() -> {
-            assertThatThrownBy(() -> restClient.get().uri("/api/conflict").retrieve().toBodilessEntity())
+            assertThatThrownBy(restClient.get().uri("/api/conflict").retrieve()::toBodilessEntity)
                     .isInstanceOf(HttpClientErrorException.Conflict.class);
-            assertThatThrownBy(() -> restClient.get().uri("/api/failing").retrieve().toBodilessEntity())
+            assertThatThrownBy(restClient.get().uri("/api/failing").retrieve()::toBodilessEntity)
                     .isInstanceOf(HttpServerErrorException.InternalServerError.class);
         });
 
@@ -95,9 +96,9 @@ class ReactionObserverHttpProviderIT {
         double noHeaderBefore = unidentifiedCalls("no_header");
 
         reactions.inTrigger(() -> {
-            assertThatThrownBy(() -> restClient.get().uri("/some-service/api/unknown").retrieve().toBodilessEntity())
+            assertThatThrownBy(restClient.get().uri("/some-service/api/unknown").retrieve()::toBodilessEntity)
                     .isInstanceOf(HttpClientErrorException.NotFound.class);
-            assertThatThrownBy(() -> restClient.get().uri("/unknown").retrieve().toBodilessEntity())
+            assertThatThrownBy(restClient.get().uri("/unknown").retrieve()::toBodilessEntity)
                     .isInstanceOf(HttpClientErrorException.NotFound.class);
         });
 
@@ -107,13 +108,29 @@ class ReactionObserverHttpProviderIT {
     }
 
     /**
+     * The name of the route contains a zero-width non-joiner, which the caller does not accept as the name of an
+     * operation. The provider does not name the operation, so the caller treats the call like any response
+     * without the header: with a status below 500, as a coarse action.
+     */
+    @Test
+    void operationWhoseNameTheCallerDoesNotAccept_noHeader_coarseAction() {
+        double noHeaderBefore = unidentifiedCalls("no_header");
+
+        reactions.inTrigger(() -> assertThat(restClient.get().uri("/zero-width-service/api/zero\u200cwidth").retrieve().body(String.class))
+                .isEqualTo("zero width"));
+
+        assertThat(reactions.actionFqnsOfSingleReaction()).containsExactly("//localhost/zero-width-service GET /{*}");
+        assertThat(unidentifiedCalls("no_header") - noHeaderBefore).isEqualTo(1);
+    }
+
+    /**
      * The client follows a redirect below the interceptor. The coarse action names the host of the request the
      * service made (localhost), not the target of the redirect (127.0.0.1).
      */
     @Test
     void redirectToATargetThatDoesNotNameTheOperation_coarseActionNamesTheHostOfTheRequest() {
         reactions.inTrigger(() ->
-                assertThatThrownBy(() -> restClient.get().uri("/api/redirect").retrieve().toBodilessEntity())
+                assertThatThrownBy(restClient.get().uri("/api/redirect").retrieve()::toBodilessEntity)
                         .isInstanceOf(HttpClientErrorException.NotFound.class));
 
         assertThat(reactions.actionFqnsOfSingleReaction()).containsExactly("//localhost GET /{*}");
@@ -127,7 +144,7 @@ class ReactionObserverHttpProviderIT {
 
         reactions.inTrigger(() -> {
             restClient.get().uri("/api/partners/42").retrieve().toBodilessEntity();
-            assertThatThrownBy(() -> restClient.get().uri("http://localhost:" + closedPort + "/api/x").retrieve().toBodilessEntity())
+            assertThatThrownBy(restClient.get().uri("http://localhost:" + closedPort + "/api/x").retrieve()::toBodilessEntity)
                     .isInstanceOf(ResourceAccessException.class);
         });
 
@@ -183,6 +200,11 @@ class ReactionObserverHttpProviderIT {
         @PostMapping("/api/partners/{id}/credit-reservations")
         void reserveCredit(@PathVariable String id) {
             // Nothing to do, the test is about the response header
+        }
+
+        @GetMapping("/zero-width-service/api/zero\u200cwidth")
+        String zeroWidth() {
+            return "zero width";
         }
 
         @GetMapping("/api/conflict")

@@ -10,6 +10,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.web.servlet.DispatcherServlet;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -48,8 +49,17 @@ public class ReactionObserverHeaderAutoConfiguration {
     /**
      * Registered with the highest precedence so that an application interceptor returning {@code false} from
      * {@code preHandle} (auth, rate limiting, ...) cannot prevent the header and {@code Vary} from being set.
+     * <p>
+     * Spring MVC keeps interceptors of the same order in the order of their {@code WebMvcConfigurer}s. The
+     * configurer is therefore ordered with the highest precedence as well: the interceptor also comes before the
+     * interceptors other configurers register with the highest precedence, unless such a configurer is itself
+     * ordered with the highest precedence or implements {@code PriorityOrdered}: Spring sorts
+     * {@code PriorityOrdered} configurers before all others, whatever their order value. The trigger of
+     * {@code jeap-reaction-observer-http} shares the precedence and follows this interceptor, see
+     * {@code ReactionObserverHttpTriggerAutoConfiguration}.
      */
     @Bean
+    @Order(Ordered.HIGHEST_PRECEDENCE)
     @ConditionalOnProperty(prefix = "jeap.reaction.observer.header", name = "enabled", matchIfMissing = true)
     WebMvcConfigurer jeapReactionObserverHeaderWebMvcConfigurer(ReactionObservationHeaderInterceptor interceptor) {
         return new WebMvcConfigurer() {

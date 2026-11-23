@@ -117,7 +117,7 @@ class ReactionObserverTechnicalCallsIT extends ReactionKafkaTestBase {
         RestClient oauth2RestClient = jeapOAuth2RestClientBuilderFactory.createForClientRegistryId("test-client").build();
         String url = wireMock.baseUrl() + path;
 
-        assertThatThrownBy(() -> oauth2RestClient.get().uri(url).retrieve().toBodilessEntity())
+        assertThatThrownBy(oauth2RestClient.get().uri(url).retrieve()::toBodilessEntity)
                 .isInstanceOf(HttpClientErrorException.NotFound.class);
 
         wireMock.verify(1, getRequestedFor(urlEqualTo(path)).withHeader(REACTION_MODEL_VERSION_HEADER, equalTo("2")));
@@ -137,7 +137,7 @@ class ReactionObserverTechnicalCallsIT extends ReactionKafkaTestBase {
         RestClient oauth2RestClient = jeapOAuth2RestClientBuilderFactory.createForClientRegistryId("test-client").build();
         String url = wireMock.baseUrl() + path;
 
-        assertThatThrownBy(() -> oauth2RestClient.get().uri(url).retrieve().toBodilessEntity())
+        assertThatThrownBy(oauth2RestClient.get().uri(url).retrieve()::toBodilessEntity)
                 .isInstanceOf(HttpServerErrorException.InternalServerError.class);
 
         wireMock.verify(1, getRequestedFor(urlEqualTo(path)).withHeader(REACTION_MODEL_VERSION_HEADER, equalTo("2")));

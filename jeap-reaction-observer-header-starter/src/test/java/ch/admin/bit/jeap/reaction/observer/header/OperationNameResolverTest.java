@@ -2,10 +2,13 @@ package ch.admin.bit.jeap.reaction.observer.header;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springdoc.teststub.FakeSpringdocController;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.boot.webmvc.autoconfigure.error.BasicErrorController;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(OutputCaptureExtension.class)
 class OperationNameResolverTest {
 
     private final OperationNameResolver resolver = new OperationNameResolver("test-app");
@@ -50,6 +54,58 @@ class OperationNameResolverTest {
         assertThat(operationNameResolver.resolve(request, handlerFunction)).contains("spring-app GET /api/items");
     }
 
+    /**
+     * A caller drops the spaces at the start and the end of the name it reads from the response header. The
+     * provider has to name its operations the same way, or caller and provider report different operations.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {" test-app", "test-app ", "\u00a0test-app\u2003", "  test-app  "})
+    void spacesAtTheEdgesOfTheProviderName_areDropped(String provider) {
+        OperationNameResolver operationNameResolver = new OperationNameResolver(provider);
+        HttpServletRequest request = requestWithPattern("GET", "/api/items");
+        HandlerFunction<ServerResponse> handlerFunction = (ServerRequest req) -> ServerResponse.ok().build();
+
+        assertThat(operationNameResolver.provider()).isEqualTo("test-app");
+        assertThat(operationNameResolver.resolve(request, handlerFunction)).contains("test-app GET /api/items");
+    }
+
+    @Test
+    void fromEnvironment_dropsSpacesAtTheEdgesOfTheName() {
+        OperationNameResolver operationNameResolver = OperationNameResolver.fromEnvironment(new MockEnvironment()
+                .withProperty("spring.application.name", " spring-app "));
+        HttpServletRequest request = requestWithPattern("GET", "/api/items");
+        HandlerFunction<ServerResponse> handlerFunction = (ServerRequest req) -> ServerResponse.ok().build();
+
+        assertThat(operationNameResolver.resolve(request, handlerFunction)).contains("spring-app GET /api/items");
+    }
+
+    /**
+     * A name of spaces only is no name, whatever kind of space: the fallback applies.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"\u00a0", " \u2003 "})
+    void fromEnvironment_fallsBackWhenTracingApplicationNameHasSpacesOnly(String tracingApplicationName) {
+        OperationNameResolver operationNameResolver = OperationNameResolver.fromEnvironment(new MockEnvironment()
+                .withProperty("jeap.rest.tracing.applicationName", tracingApplicationName)
+                .withProperty("spring.application.name", "spring-app"));
+        HttpServletRequest request = requestWithPattern("GET", "/api/items");
+        HandlerFunction<ServerResponse> handlerFunction = (ServerRequest req) -> ServerResponse.ok().build();
+
+        assertThat(operationNameResolver.resolve(request, handlerFunction)).contains("spring-app GET /api/items");
+    }
+
+    /**
+     * No operation name starts or ends with a space, wherever the space comes from.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"/api/items\u00a0", "/api/items\u2003/", "/api/items "})
+    void resolve_spacesAtTheEndOfThePattern_areDropped(String pattern) {
+        HttpServletRequest request = requestWithPattern("GET", pattern);
+        HandlerFunction<ServerResponse> handlerFunction = (ServerRequest req) -> ServerResponse.ok().build();
+
+        assertThat(resolver.resolve(request, handlerFunction)).contains("test-app GET /api/items");
+    }
+
     @Test
     void fromEnvironment_fallsBackWhenTracingApplicationNameIsBlank() {
         OperationNameResolver operationNameResolver = OperationNameResolver.fromEnvironment(new MockEnvironment()
@@ -73,7 +129,7 @@ class OperationNameResolverTest {
 
     @ParameterizedTest
     @NullAndEmptySource
-    @ValueSource(strings = {" ", "\t"})
+    @ValueSource(strings = {" ", "\t", "\u00a0"})
     void resolve_missingOrBlankProvider_isNotObserved(String provider) throws Exception {
         HttpServletRequest request = requestWithPattern("GET", "/api/items/{id}");
         HandlerMethod handler = handlerMethodOf(new SampleController(), "getItem");
@@ -115,12 +171,16 @@ class OperationNameResolverTest {
         assertThat(resolver.resolve(request, handler)).contains("test-app GET /api/items/{} ;v=3");
     }
 
-    @Test
-    void resolve_methodIsUppercased() throws Exception {
-        HttpServletRequest request = requestWithPattern("post", "/api/items");
+    /**
+     * Methods are case-sensitive: Spring routes {@code post} to no {@code @PostMapping}, so it is not {@code POST}.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"post", "Post", "get", "gEt"})
+    void resolve_standardMethodInAnotherCase_isNotObserved(String method) throws Exception {
+        HttpServletRequest request = requestWithPattern(method, "/api/items");
         HandlerMethod handler = handlerMethodOf(new SampleController(), "getItem");
 
-        assertThat(resolver.resolve(request, handler)).contains("test-app POST /api/items");
+        assertThat(resolver.resolve(request, handler)).isEmpty();
     }
 
     @Test
@@ -157,6 +217,89 @@ class OperationNameResolverTest {
         HandlerMethod handler = handlerMethodOf(new SampleController(), "getItem");
 
         assertThat(resolver.resolve(request, handler)).isEmpty();
+    }
+
+    /**
+     * A consumer would not accept the name, so the operation is not named: provider and consumer must not
+     * identify it differently. The warning shows the invisible character as text, and only once.
+     */
+    @Test
+    void resolve_nameAConsumerWouldNotAccept_isNotObserved_warnedOnce(CapturedOutput output) throws Exception {
+        HttpServletRequest request = requestWithPattern("GET", "/api/zero\u200cwidth");
+        HandlerMethod handler = handlerMethodOf(new SampleController(), "getItem");
+
+        assertThat(resolver.resolve(request, handler)).isEmpty();
+        assertThat(resolver.resolve(request, handler)).isEmpty();
+
+        assertThat(output.getAll().split("is not named", -1)).hasSize(2);
+        assertThat(output).contains("SampleController#getItem[0 args]")
+                .contains("'test-app GET /api/zero[U+200C]width'")
+                .contains("contains a control character, a line or paragraph separator or an invisible format character")
+                .doesNotContain("\u200c");
+    }
+
+    @Test
+    void resolve_namesAConsumerWouldNotAccept_ofSeveralOperations_eachWarnedAboutOnce(CapturedOutput output)
+            throws Exception {
+        HandlerMethod handler = handlerMethodOf(new SampleController(), "getItem");
+
+        for (int i = 0; i < 2; i++) {
+            assertThat(resolver.resolve(requestWithPattern("GET", "/api/zero\u200cwidth/a"), handler)).isEmpty();
+            assertThat(resolver.resolve(requestWithPattern("GET", "/api/zero\u200cwidth/b"), handler)).isEmpty();
+            assertThat(resolver.resolve(requestWithPattern("POST", "/api/zero\u200cwidth/a"), handler)).isEmpty();
+        }
+
+        assertThat(output.getAll().split("is not named", -1)).hasSize(4);
+        assertThat(output).contains("GET /api/zero[U+200C]width/a'", "GET /api/zero[U+200C]width/b'",
+                "POST /api/zero[U+200C]width/a'");
+    }
+
+    /**
+     * A service that registers mappings at runtime has no fixed number of operations: the number of warnings has
+     * a fixed bound all the same.
+     */
+    @Test
+    void resolve_namesAConsumerWouldNotAccept_ofMoreOperationsThanTheLimit_warnedAboutAtMostTheLimit(
+            CapturedOutput output) throws Exception {
+        HandlerMethod handler = handlerMethodOf(new SampleController(), "getItem");
+
+        for (int i = 0; i < OperationNameResolver.MAX_WARNED_NAMES + 5; i++) {
+            assertThat(resolver.resolve(requestWithPattern("GET", "/api/zero\u200cwidth/" + i), handler)).isEmpty();
+        }
+
+        assertThat(output.getAll().split("is not named", -1)).hasSize(OperationNameResolver.MAX_WARNED_NAMES + 1);
+        assertThat(output).contains("width/0'").doesNotContain("width/" + OperationNameResolver.MAX_WARNED_NAMES + "'");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE"})
+    void resolve_standardMethod_isObserved(String method) throws Exception {
+        HttpServletRequest request = requestWithPattern(method, "/api/items");
+        HandlerMethod handler = handlerMethodOf(new SampleController(), "getItem");
+
+        assertThat(resolver.resolve(request, handler)).contains("test-app " + method + " /api/items");
+    }
+
+    /**
+     * A mapping without a method condition accepts any method a client sends. Made-up methods must not make an
+     * unbounded number of operations out of one mapping; they are not named, and not warned about either.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"FOO", "PROPFIND", "M-SEARCH", "QUERY", "GETX"})
+    void resolve_otherMethod_isNotObserved_notWarnedAbout(String method, CapturedOutput output) throws Exception {
+        HttpServletRequest request = requestWithPattern(method, "/api/items");
+        HandlerMethod handler = handlerMethodOf(new SampleController(), "getItem");
+
+        assertThat(resolver.resolve(request, handler)).isEmpty();
+        assertThat(output).doesNotContain("is not named");
+    }
+
+    @Test
+    void resolve_providerNameOfACoarseAction_isNotObserved() throws Exception {
+        HttpServletRequest request = requestWithPattern("GET", "/api/items");
+        HandlerMethod handler = handlerMethodOf(new SampleController(), "getItem");
+
+        assertThat(new OperationNameResolver("//test-app").resolve(request, handler)).isEmpty();
     }
 
     @Test

@@ -27,8 +27,9 @@ public class ReactionObserverProperties {
 
     /**
      * The version of the reaction model the service observes by: 1 or 2. Version 1 observes the events and
-     * commands a service sends. Version 2 adds its outgoing HTTP requests and requires a Reaction Observer
-     * Service that supports reaction model version 2. A version that does not exist fails the start of the
+     * commands a service sends. Version 2 adds its outgoing HTTP requests as actions and its incoming HTTP
+     * requests as triggers, and requires a Reaction Observer Service that supports reaction model version 2. A
+     * version that does not exist fails the start of the
      * service.
      */
     private int modelVersion = 1;

@@ -226,7 +226,7 @@ class ReactionObserverHttpAutoConfigurationTest {
                     RestClient restClient = context.getBean(RestClient.Builder.class).build();
 
                     ObservedReactions reactions = context.getBean(ObservedReactions.class);
-                    reactions.inTrigger(() -> assertThatThrownBy(() -> restClient.get().uri(URL).retrieve().toBodilessEntity())
+                    reactions.inTrigger(() -> assertThatThrownBy(restClient.get().uri(URL).retrieve()::toBodilessEntity)
                             .isInstanceOf(IllegalStateException.class));
 
                     assertThat(reactions.identified()).isEmpty();

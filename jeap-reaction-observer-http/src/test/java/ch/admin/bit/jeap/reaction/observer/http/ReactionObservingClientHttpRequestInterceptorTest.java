@@ -115,7 +115,7 @@ class ReactionObservingClientHttpRequestInterceptorTest {
     void clientError_exceptionOfTheCallPassesUnchanged_coarseAction() {
         server.expect(requestTo(URL)).andRespond(withStatus(HttpStatus.NOT_FOUND));
 
-        reactions.inTrigger(() -> assertThatThrownBy(() -> restClient.get().uri(URL).retrieve().toBodilessEntity())
+        reactions.inTrigger(() -> assertThatThrownBy(restClient.get().uri(URL).retrieve()::toBodilessEntity)
                 .isInstanceOf(HttpClientErrorException.NotFound.class));
 
         assertThat(reactions.actionFqnsOfSingleReaction()).containsExactly("//partner.example.org/partner-service GET /{*}");
@@ -126,7 +126,7 @@ class ReactionObservingClientHttpRequestInterceptorTest {
         server.expect(requestTo(URL)).andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR)
                 .header(OBSERVATION_HEADER, "%\"" + PARTNER_OPERATION + "\""));
 
-        reactions.inTrigger(() -> assertThatThrownBy(() -> restClient.get().uri(URL).retrieve().toBodilessEntity())
+        reactions.inTrigger(() -> assertThatThrownBy(restClient.get().uri(URL).retrieve()::toBodilessEntity)
                 .isInstanceOf(HttpServerErrorException.InternalServerError.class));
 
         assertThat(reactions.actionFqnsOfSingleReaction()).containsExactly(PARTNER_OPERATION);
@@ -136,7 +136,7 @@ class ReactionObservingClientHttpRequestInterceptorTest {
     void serverErrorWithoutHeader_exceptionOfTheCallPassesUnchanged_executionIsDiscarded() {
         server.expect(requestTo(URL)).andRespond(withStatus(HttpStatus.SERVICE_UNAVAILABLE));
 
-        reactions.inTrigger(() -> assertThatThrownBy(() -> restClient.get().uri(URL).retrieve().toBodilessEntity())
+        reactions.inTrigger(() -> assertThatThrownBy(restClient.get().uri(URL).retrieve()::toBodilessEntity)
                 .isInstanceOf(HttpServerErrorException.ServiceUnavailable.class));
 
         assertThat(reactions.identified()).isEmpty();
@@ -148,7 +148,7 @@ class ReactionObservingClientHttpRequestInterceptorTest {
         IOException ioException = new IOException("connection reset");
         server.expect(requestTo(URL)).andRespond(withException(ioException));
 
-        reactions.inTrigger(() -> assertThatThrownBy(() -> restClient.get().uri(URL).retrieve().toBodilessEntity())
+        reactions.inTrigger(() -> assertThatThrownBy(restClient.get().uri(URL).retrieve()::toBodilessEntity)
                 .isInstanceOf(ResourceAccessException.class)
                 .hasCause(ioException));
 
@@ -161,7 +161,7 @@ class ReactionObservingClientHttpRequestInterceptorTest {
         SocketTimeoutException timeout = new SocketTimeoutException("Read timed out");
         server.expect(requestTo(URL)).andRespond(withException(timeout));
 
-        reactions.inTrigger(() -> assertThatThrownBy(() -> restClient.get().uri(URL).retrieve().toBodilessEntity())
+        reactions.inTrigger(() -> assertThatThrownBy(restClient.get().uri(URL).retrieve()::toBodilessEntity)
                 .isInstanceOf(ResourceAccessException.class)
                 .hasCause(timeout));
 
@@ -178,7 +178,7 @@ class ReactionObservingClientHttpRequestInterceptorTest {
                 })
                 .build();
 
-        reactions.inTrigger(() -> assertThatThrownBy(() -> failingClient.get().uri(URL).retrieve().toBodilessEntity())
+        reactions.inTrigger(() -> assertThatThrownBy(failingClient.get().uri(URL).retrieve()::toBodilessEntity)
                 .isSameAs(failure));
 
         assertThat(reactions.identified()).isEmpty();
@@ -232,7 +232,7 @@ class ReactionObservingClientHttpRequestInterceptorTest {
         server.expect(requestTo(URL)).andRespond(withSuccess().header(OBSERVATION_HEADER, "%\"" + PARTNER_OPERATION + "\""));
 
         reactions.inTrigger(() -> {
-            assertThatThrownBy(() -> restClient.get().uri(URL).retrieve().toBodilessEntity())
+            assertThatThrownBy(restClient.get().uri(URL).retrieve()::toBodilessEntity)
                     .isInstanceOf(HttpServerErrorException.ServiceUnavailable.class);
             restClient.get().uri(URL).retrieve().toBodilessEntity();
         });
@@ -257,7 +257,7 @@ class ReactionObservingClientHttpRequestInterceptorTest {
                 })
                 .build();
 
-        reactions.inTrigger(() -> assertThatThrownBy(() -> clientWithFailingInitializer.get().uri(URL).retrieve().toBodilessEntity())
+        reactions.inTrigger(() -> assertThatThrownBy(clientWithFailingInitializer.get().uri(URL).retrieve()::toBodilessEntity)
                 .isInstanceOf(IllegalStateException.class));
 
         assertThat(reactions.identified()).hasSize(1);
@@ -285,7 +285,7 @@ class ReactionObservingClientHttpRequestInterceptorTest {
         // The server accepts the connection and the request, but never answers
         try (ServerSocket silentServer = new ServerSocket(0)) {
             String url = "http://localhost:" + silentServer.getLocalPort() + "/api/jobs";
-            reactions.inTrigger(() -> assertThatThrownBy(() -> client.post().uri(url).body("{}").retrieve().toBodilessEntity())
+            reactions.inTrigger(() -> assertThatThrownBy(client.post().uri(url).body("{}").retrieve()::toBodilessEntity)
                     .isInstanceOf(ResourceAccessException.class)
                     .cause()
                     .isInstanceOf(SocketTimeoutException.class));
@@ -329,7 +329,7 @@ class ReactionObservingClientHttpRequestInterceptorTest {
         ResponseWithInvalidStatusCode invalidResponse = new ResponseWithInvalidStatusCode();
         RestClient client = clientReturning(invalidResponse, new SimpleMeterRegistry());
 
-        reactions.inTrigger(() -> assertThatThrownBy(() -> client.get().uri(URL).retrieve().toBodilessEntity())
+        reactions.inTrigger(() -> assertThatThrownBy(client.get().uri(URL).retrieve()::toBodilessEntity)
                 .describedAs("the failure of the caller's own read, not the one of the observation")
                 .isSameAs(invalidResponse.failures().getLast())
                 .isNotSameAs(invalidResponse.failures().getFirst()));
@@ -448,9 +448,9 @@ class ReactionObservingClientHttpRequestInterceptorTest {
         failingObserverServer.expect(requestTo(URL)).andRespond(withException(ioException));
 
         assertThat(client.get().uri(URL).retrieve().body(String.class)).isEqualTo("ok");
-        assertThatThrownBy(() -> client.get().uri(URL).retrieve().toBodilessEntity())
+        assertThatThrownBy(client.get().uri(URL).retrieve()::toBodilessEntity)
                 .isInstanceOf(HttpServerErrorException.ServiceUnavailable.class);
-        assertThatThrownBy(() -> client.get().uri(URL).retrieve().toBodilessEntity())
+        assertThatThrownBy(client.get().uri(URL).retrieve()::toBodilessEntity)
                 .isInstanceOf(ResourceAccessException.class)
                 .hasCause(ioException);
         failingObserverServer.verify();

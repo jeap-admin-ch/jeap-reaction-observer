@@ -3,6 +3,7 @@ package ch.admin.bit.jeap.reaction.observer.core.domain;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.Observation;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.Reaction;
 
+import java.util.Map;
 import java.util.Optional;
 
 public class ReactionRecorder {
@@ -87,6 +88,18 @@ public class ReactionRecorder {
     }
 
     /**
+     * Tells whether at least one action has been recorded for the current trigger so far.
+     *
+     * @return true if the current thread is inside a trigger that has at least one action, false otherwise, also
+     * outside a trigger
+     */
+    public boolean currentTriggerHasActions() {
+        return currentTriggerExecution()
+                .map(ReactionRecorderState::currentTriggerHasActions)
+                .orElse(false);
+    }
+
+    /**
      * Cleanup resources created at the start of the current trigger.
      */
     public void afterTrigger() {
@@ -94,6 +107,45 @@ public class ReactionRecorder {
         if (state != null && state.exitTrigger()) {
             // The outermost trigger has ended: the thread holds no state any more
             reactionRecorderState.remove();
+        }
+    }
+
+    /**
+     * Ends the current trigger as if it had never been started, for a trigger that turns out not to be
+     * observable after it has been started - for example an HTTP request that is handed over to another thread.
+     * No reaction is published for the trigger. What has been recorded for it is recorded again without it:
+     * its actions become actions of the enclosing trigger if there is one, otherwise each is published as an
+     * action-only reaction - as often as it was recorded, as without the trigger. A failed action
+     * ({@link #onActionFailed()}) discards the execution of the enclosing trigger.
+     * <p>
+     * A trigger keeps a limited number of actions. An action over that limit is not kept and therefore not
+     * recorded again.
+     * <p>
+     * Takes the place of {@link #afterTrigger()}: the trigger is ended also if recording its actions again
+     * fails. Does nothing outside a trigger.
+     */
+    public void abandonTrigger() {
+        ReactionRecorderState state = reactionRecorderState.get();
+        if (state == null) {
+            return;
+        }
+        Map<Observation, Integer> occurrencesByAction = Map.of();
+        boolean discarded = false;
+        try {
+            occurrencesByAction = state.currentActionOccurrences();
+            discarded = state.isCurrentExecutionDiscarded();
+        } finally {
+            afterTrigger();
+        }
+        occurrencesByAction.forEach(this::recordAction);
+        if (discarded) {
+            onActionFailed();
+        }
+    }
+
+    private void recordAction(Observation action, int occurrences) {
+        for (int i = 0; i < occurrences; i++) {
+            recordAction(action);
         }
     }
 

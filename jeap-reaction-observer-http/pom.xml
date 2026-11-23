@@ -7,15 +7,16 @@
     <parent>
         <groupId>ch.admin.bit.jeap</groupId>
         <artifactId>jeap-reaction-observer</artifactId>
-        <version>11.38.0-SNAPSHOT</version>
+        <version>11.39.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>jeap-reaction-observer-http</artifactId>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>
         Observes the outgoing HTTP requests of a service as actions: sends the JEAP-REACTION-MODEL-VERSION request
-        header and names the action by the JEAP-REACTION-OBSERVATION response header of the provider. Deliberately
-        independent of jEAP Messaging, Kafka and Avro.
+        header and names the action by the JEAP-REACTION-OBSERVATION response header of the provider. Observes the
+        incoming HTTP requests of a service as triggers, named like the header module names the operation in that
+        response header. Deliberately independent of jEAP Messaging, Kafka and Avro.
     </description>
     <packaging>jar</packaging>
 
@@ -27,6 +28,12 @@
         <dependency>
             <groupId>ch.admin.bit.jeap</groupId>
             <artifactId>jeap-reaction-observer-configuration</artifactId>
+        </dependency>
+        <!-- Names the operation of an incoming request, so that trigger and response header never differ. Its web
+             dependencies are optional, it does not put Spring MVC on the classpath of a service. -->
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-reaction-observer-header-starter</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -46,6 +53,18 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <!-- Spring MVC and the servlet API are optional: incoming requests are only observed in a servlet web
+             application, and this module must not turn a service into one. -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
             <optional>true</optional>
         </dependency>
         <!-- The metrics are optional: they are only registered if the service has a MeterRegistry. -->
@@ -80,16 +99,22 @@
             <artifactId>spring-boot-starter-web</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Method security, which rejects a request inside the handler invocation. Without the Spring Boot
+             security starter: only the test that configures security itself is secured. -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-config</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- The @RestClientTest slice, in which the factory for clients without observation has to be available -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-restclient-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <!-- The provider side of the header protocol, for tests against a real provider -->
-        <dependency>
-            <groupId>ch.admin.bit.jeap</groupId>
-            <artifactId>jeap-reaction-observer-header-starter</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

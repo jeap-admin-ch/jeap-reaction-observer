@@ -71,6 +71,13 @@ class ObservedReactions implements ReactionIdentifiedListener {
     }
 
     /**
+     * Forgets one of the reactions identified so far, its count stays.
+     */
+    void forget(Reaction reaction) {
+        identified.remove(reaction);
+    }
+
+    /**
      * Forgets the reactions identified so far and the counts. The observer service still knows which reactions
      * it has identified: such a reaction is not identified again. A full reset would need a new recorder, but
      * a Spring context holds on to the one it got as a bean.
