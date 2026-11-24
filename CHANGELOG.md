@@ -9,6 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 - Update parent from 11.16.0 to 11.17.0
+- update jeap-spring-boot-starters from 25.33.0 to 25.34.0
 
 ## [11.37.0] - 2026-11-19
 
