@@ -129,6 +129,11 @@
                     <artifactId>maven-jar-plugin</artifactId>
                     <configuration>
                         <archive>
+                            <manifest>
+                                <!-- The modules check at the start of a service that they are of the same
+                                     version, which they read from Implementation-Version -->
+                                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                            </manifest>
                             <manifestEntries>
                                 <Bundle-License>https://www.apache.org/licenses/LICENSE-2.0</Bundle-License>
                             </manifestEntries>

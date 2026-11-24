@@ -29,8 +29,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   else `spring.application.name`) of spaces only counts as not set. A consumer drops these spaces from the name
   it reads from the header, so that consumer and provider identified such an operation differently
 - All modules of the Reaction Observer have to be of the same version, to be chosen with the property
-  `jeap-reaction-observer.version` of the jEAP parent: `jeap-reaction-observer-http` of this version does not
-  start with an older `jeap-reaction-observer-header-starter`
+  `jeap-reaction-observer.version` of the jEAP parent: a service that observes by reaction model version 2 does
+  not start if `jeap-reaction-observer-http` and `jeap-reaction-observer-header-starter`,
+  `jeap-reaction-observer-core` or `jeap-reaction-observer-configuration` are of different versions
 - The interceptor that sets the response header comes first also among the interceptors a service registers
   with the highest precedence, unless the service orders their `WebMvcConfigurer` with the highest precedence
   as well or the configurer implements `PriorityOrdered`

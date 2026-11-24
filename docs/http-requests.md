@@ -48,9 +48,14 @@ version of the library. A version that does not exist fails the start of the ser
 
 All modules of the Reaction Observer have to be of the same version, including
 `jeap-reaction-observer-header-starter`, which the jEAP parent adds to every service. Choose the version with
-the property `jeap-reaction-observer.version` of the jEAP parent, not with a version at a single dependency: a
-service that combines modules of different versions can fail at its start, for example with a
-`NoSuchMethodError`.
+the property `jeap-reaction-observer.version` of the jEAP parent, not with a version at a single dependency:
+the jEAP parent chooses the version of some of the modules by that property, whatever version a single
+dependency states. A service that observes by reaction model version 2 does not start if
+`jeap-reaction-observer-http` and one of the modules it uses - `jeap-reaction-observer-header-starter`,
+`jeap-reaction-observer-core` and `jeap-reaction-observer-configuration` - are of different versions; the
+failure names the modules and their versions. A `jeap-reaction-observer-core` before 11.37.0 does not know
+the reaction models: with it a service that has an HTTP client or Spring MVC does not start either, whatever
+its reaction model version, and the failure names the versions as well.
 
 | `jeap.reaction.observer.enabled` | `jeap.reaction.observer.model-version` | Behaviour |
 |---|---|---|
