@@ -29,10 +29,6 @@ public class KafkaEventProducer implements ReactionIdentifiedListener {
     private final KafkaTemplate<AvroMessageKey, AvroMessage> kafkaTemplate;
     private final int reactionModelVersion;
     private final UUID serviceInstanceIdentifier = Generators.timeBasedEpochGenerator().generate();
-    /**
-     * The time at which this instance began to report its reactions. Each reaction is reported once since then.
-     */
-    private final Instant identificationStart = Instant.now();
 
     /**
      * @param reactionModel the reaction model the service observes by, its version is reported in both events
@@ -56,7 +52,7 @@ public class KafkaEventProducer implements ReactionIdentifiedListener {
     }
 
     @Override
-    public void onReactionIdentified(Reaction reaction) {
+    public void onReactionIdentified(Reaction reaction, Instant identificationStart) {
         ReactionIdentifiedEvent event = ReactionIdentifiedEventBuilder
                 .buildEvent(kafkaProperties.getSystemName(), kafkaProperties.getServiceName(),
                         serviceInstanceIdentifier, reaction, reactionModelVersion, identificationStart);

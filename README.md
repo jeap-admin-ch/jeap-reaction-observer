@@ -21,7 +21,7 @@ Start with [Getting started](docs/getting-started.md), then follow the links bel
 | Topic                                                       | File                                                       |
 |-------------------------------------------------------------|------------------------------------------------------------|
 | Getting started (add the starter, configure topics)         | [docs/getting-started.md](docs/getting-started.md)         |
-| How it works (triggers, actions, reactions, observed events) | [docs/how-it-works.md](docs/how-it-works.md)               |
+| How it works (triggers, actions, reactions, observed events, reidentification, limits, metrics) | [docs/how-it-works.md](docs/how-it-works.md) |
 | Configuration reference (`jeap.reaction.observer.*`)        | [docs/configuration.md](docs/configuration.md)             |
 | System behaviour documentation (the bigger picture)         | [docs/system-behaviour-documentation.md](docs/system-behaviour-documentation.md) |
 | HTTP requests as actions (reaction model version 2, fine and coarse actions, failed calls, metrics) | [docs/http-requests.md](docs/http-requests.md) |

@@ -33,8 +33,7 @@ public class ReactionObserverEventAutoConfiguration {
 
     @Bean
     ReactionsObservedEventScheduler reactionsObservedEventScheduler(
-            ReactionObserverKafkaConfigProperties props,
             ReactionObserverService reactionObserverService, KafkaEventProducer kafkaEventProducer) {
-        return new ReactionsObservedEventScheduler(props, reactionObserverService, kafkaEventProducer);
+        return new ReactionsObservedEventScheduler(reactionObserverService, kafkaEventProducer);
     }
 }

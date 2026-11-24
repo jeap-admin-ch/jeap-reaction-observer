@@ -6,6 +6,7 @@ import ch.admin.bit.jeap.reaction.observer.core.domain.listener.ReactionIdentifi
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.Observation;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.Reaction;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -24,7 +25,7 @@ class ObservedReactions implements ReactionIdentifiedListener {
     private final ReactionRecorder recorder = new ReactionRecorder(reactionObserverService);
 
     @Override
-    public void onReactionIdentified(Reaction reaction) {
+    public void onReactionIdentified(Reaction reaction, Instant identificationStart) {
         identified.add(reaction);
     }
 

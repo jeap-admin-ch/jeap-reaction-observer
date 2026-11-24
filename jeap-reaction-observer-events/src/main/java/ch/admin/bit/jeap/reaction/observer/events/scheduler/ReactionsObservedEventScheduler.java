@@ -2,7 +2,6 @@ package ch.admin.bit.jeap.reaction.observer.events.scheduler;
 
 import ch.admin.bit.jeap.reaction.observer.core.domain.ReactionObserverService;
 import ch.admin.bit.jeap.reaction.observer.events.producer.KafkaEventProducer;
-import ch.admin.bit.jeap.reaction.observer.events.spring.ReactionObserverKafkaConfigProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -14,14 +13,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class ReactionsObservedEventScheduler implements SmartLifecycle {
 
-    private final ReactionObserverKafkaConfigProperties props;
     private final ReactionObserverService reactionObserverService;
     private final KafkaEventProducer kafkaEventProducer;
     private Instant lastObservationTimeframeStart;
     private boolean running = false;
 
-    public ReactionsObservedEventScheduler(ReactionObserverKafkaConfigProperties props, ReactionObserverService reactionObserverService, KafkaEventProducer kafkaEventProducer) {
-        this.props = props;
+    public ReactionsObservedEventScheduler(ReactionObserverService reactionObserverService, KafkaEventProducer kafkaEventProducer) {
         this.reactionObserverService = reactionObserverService;
         this.kafkaEventProducer = kafkaEventProducer;
     }
@@ -56,11 +53,6 @@ public class ReactionsObservedEventScheduler implements SmartLifecycle {
 
     @Override
     public void start() {
-        if (!props.isObservedEventSchedulingEnabled()) {
-            log.info("ReactionsObservedEventScheduler is disabled. Skipping start.");
-            return;
-        }
-
         log.info("Starting ReactionsObservedEventScheduler");
         if (lastObservationTimeframeStart == null) {
             lastObservationTimeframeStart = Instant.now();
@@ -70,10 +62,6 @@ public class ReactionsObservedEventScheduler implements SmartLifecycle {
 
     @Override
     public void stop() {
-        if (!props.isObservedEventSchedulingEnabled()) {
-            return;
-        }
-
         log.info("Stopping ReactionsObservedEventScheduler");
         sendEvent();
         running = false;

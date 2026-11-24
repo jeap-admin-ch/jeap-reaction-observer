@@ -1,16 +1,24 @@
 package ch.admin.bit.jeap.reaction.observer.spring;
 
 import ch.admin.bit.jeap.reaction.observer.configuration.ReactionObserverProperties;
+import ch.admin.bit.jeap.reaction.observer.core.domain.ReactionObserverMetrics;
+import ch.admin.bit.jeap.reaction.observer.core.domain.ReactionObserverService;
 import ch.admin.bit.jeap.reaction.observer.core.domain.ReactionRecorder;
 import ch.admin.bit.jeap.reaction.observer.core.domain.listener.ReactionIdentifiedListener;
+import ch.admin.bit.jeap.reaction.observer.core.domain.model.Observation;
+import ch.admin.bit.jeap.reaction.observer.core.domain.model.Reaction;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.ReactionModel;
 import ch.admin.bit.jeap.reaction.observer.http.ReactionObserverHttpAutoConfiguration;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
+import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,6 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.mock;
 
 class ReactionObserverConfigurationTest {
@@ -59,6 +68,92 @@ class ReactionObserverConfigurationTest {
         contextRunner.withInitializer(context -> yaml("model-version: " + value).forEach(context.getEnvironment().getPropertySources()::addFirst))
                 .run(context -> assertThat(context).hasFailed().getFailure()
                         .hasStackTraceContaining("jeap.reaction.observer.model-version"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"1", "0", "-1h", "daily"})
+    void reidentificationPeriodThatIsNoPeriod_failsTheStart(String value) {
+        contextRunner.withPropertyValues("jeap.reaction.observer.reidentification-period=" + value)
+                .run(context -> assertThat(context).hasFailed().getFailure()
+                        .hasStackTraceContaining("jeap.reaction.observer.reidentification-period"));
+    }
+
+    @Test
+    void reidentificationPeriodOfTheMinimum_starts() {
+        contextRunner.withPropertyValues("jeap.reaction.observer.reidentification-period=2s")
+                .run(context -> assertThat(context).hasNotFailed().hasSingleBean(ReactionObserverService.class));
+    }
+
+    @Test
+    void disabled_reidentificationPeriodIsNotChecked() {
+        contextRunner.withPropertyValues("jeap.reaction.observer.enabled=false", "jeap.reaction.observer.reidentification-period=0")
+                .run(context -> assertThat(context).hasNotFailed().doesNotHaveBean(ReactionObserverService.class));
+    }
+
+    /**
+     * All metrics are visible from the start with the value 0, so that an alert on an increase also sees the
+     * first one.
+     */
+    @Test
+    void metrics_withMeterRegistry_arePublishedFromTheStart() {
+        contextRunner.withBean(MeterRegistry.class, SimpleMeterRegistry::new)
+                .run(context -> {
+                    MeterRegistry meterRegistry = context.getBean(MeterRegistry.class);
+                    assertThat(meterRegistry.get("jeap.reaction.observer.identified.reactions").gauge().value()).isZero();
+                    assertThat(meterRegistry.get("jeap.reaction.observer.dropped.executions").counters())
+                            .extracting(counter -> counter.getId().getTag("reason"), Counter::count)
+                            .containsExactlyInAnyOrder(tuple("reaction_limit", 0.0), tuple("not_identified", 0.0),
+                                    tuple("count_limit", 0.0));
+                });
+    }
+
+    @Test
+    void metrics_showIdentifiedReactionsAndDroppedExecutions() {
+        contextRunner.withBean(MeterRegistry.class, SimpleMeterRegistry::new)
+                .run(context -> {
+                    ReactionObserverService reactionObserverService = context.getBean(ReactionObserverService.class);
+                    MeterRegistry meterRegistry = context.getBean(MeterRegistry.class);
+
+                    for (int i = 0; i <= ReactionObserverService.MAX_REACTION_COUNT; i++) {
+                        reactionObserverService.reactionObserved(new Reaction(Observation.ofEvent("Event" + i, "topic"), null));
+                    }
+
+                    assertThat(meterRegistry.get("jeap.reaction.observer.identified.reactions").gauge().value())
+                            .isEqualTo(ReactionObserverService.MAX_REACTION_COUNT);
+                    assertThat(meterRegistry.get("jeap.reaction.observer.dropped.executions")
+                            .tag("reason", "reaction_limit").counter().count()).isEqualTo(1);
+                    assertThat(meterRegistry.get("jeap.reaction.observer.dropped.executions")
+                            .tag("reason", "not_identified").counter().count()).isZero();
+                });
+    }
+
+    /**
+     * A metrics bean of the service replaces the one of the library, it does not fail the start as a second one.
+     */
+    @Test
+    void metrics_beanOfTheService_replacesTheMetricsOfTheLibrary() {
+        ReactionObserverMetrics metricsOfTheService = mock(ReactionObserverMetrics.class);
+        contextRunner.withBean(MeterRegistry.class, SimpleMeterRegistry::new)
+                .withBean(ReactionObserverMetrics.class, () -> metricsOfTheService)
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    assertThat(context.getBean(ReactionObserverMetrics.class)).isSameAs(metricsOfTheService);
+                    assertThat(context.getBean(MeterRegistry.class).find("jeap.reaction.observer.dropped.executions").counters())
+                            .isEmpty();
+                });
+    }
+
+    @Test
+    void metrics_withoutMeterRegistry_nothingIsPublished() {
+        contextRunner.run(context -> assertThat(context.getBean(ReactionObserverMetrics.class)).isSameAs(ReactionObserverMetrics.NONE));
+    }
+
+    @Test
+    void metrics_withoutMicrometerOnTheClasspath_nothingIsPublished() {
+        contextRunner.withClassLoader(new FilteredClassLoader(MeterRegistry.class))
+                .run(context -> assertThat(context).hasNotFailed()
+                        .hasSingleBean(ReactionObserverService.class)
+                        .doesNotHaveBean(ReactionObserverMetrics.class));
     }
 
     /**

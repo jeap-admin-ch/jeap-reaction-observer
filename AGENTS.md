@@ -80,14 +80,23 @@ Kafka or Avro (enforced by a Maven Enforcer rule), as it is meant to be added to
 - Recording is **best-effort**: exceptions in `ReactionObserverService` are caught and logged, never
   propagated. The observer's own events (`ReactionIdentifiedEvent`, `ReactionsObservedEvent`) and
   `MessageProcessingFailedEvent` are filtered out so they are not observed as reactions.
-- `ReactionObserverService` notifies the `ReactionIdentifiedListener` on a single thread of its own, never on
+- `ReactionObserverService` notifies the `ReactionIdentifiedListener` (an internal interface between the
+  modules, not an extension point) on a single thread of its own, never on
   the observing thread: a slow Kafka broker must not delay the observed code. A reaction is marked as
   identified before the notification and unmarked when the notification or its hand-off fails, so it is
   identified again the next time it occurs; only the first of consecutive failures is logged as a warning.
+  Only executions of marked reactions are counted, the others are dropped and counted in the metric
+  `jeap.reaction.observer.dropped.executions`.
   Unit tests that expect the notification right away pass a direct executor (`Runnable::run`); `close()`
   shuts down only the executor the service created itself.
-- Bounded by design: at most `MAX_REACTION_COUNT` (4096) distinct reactions and `MAX_MESSAGING_ACTION_COUNT`
-  (100) message actions per trigger are tracked, to cap memory use; HTTP request actions have their own
+- The marks belong to an `IdentificationPeriod`. `ReactionObserverService` replaces the period when it is over
+  (`jeap.reaction.observer.reidentification-period`), checked when a reaction is observed, not by a scheduler:
+  that is the reidentification. Identifying and counting an execution use the same period, and a report
+  unmarks its reaction only in the period it was marked in. The identification start of the period is passed
+  to the `ReactionIdentifiedListener` and ends the idempotence id of the `ReactionIdentifiedEvent`.
+- Bounded by design: at most `MAX_REACTION_COUNT` (4096) distinct reactions per identification period, the
+  counts of at most as many reactions between two `ReactionsObservedEvent`s and
+  `MAX_MESSAGING_ACTION_COUNT` (100) message actions per trigger are tracked, to cap memory use; HTTP request actions have their own
   budget (`MAX_HTTP_ACTION_COUNT`, 100 per trigger) and coarse actions are named for a limited number of
   targets (`jeap.reaction.observer.http.max-target-count`, 100 by default). The operation names taken from
   response headers form one stock shared by all targets: a called target may contribute a limited number of

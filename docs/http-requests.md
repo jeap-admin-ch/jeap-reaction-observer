@@ -306,7 +306,8 @@ service does. Only what has been identified with certainty is counted.
 - **Actions per trigger**: at most 100 HTTP request actions per trigger are recorded, in a budget of their
   own. The limit of 100 message actions per trigger is unchanged, so HTTP requests never push a message out
   of a reaction.
-- **Reactions**: unchanged, at most 4096 distinct reactions per instance, see [Known limits](#known-limits).
+- **Reactions**: unchanged, at most 4096 distinct reactions per instance and identification period, see
+  [Known limits](#known-limits).
 
 ## Metrics
 
@@ -326,8 +327,9 @@ If the service has a `MeterRegistry`, two counters are published. Neither carrie
   diagnosis metric. It is not a loss as long as it becomes a coarse action; it counts in the loss metric too if
   the target is over the limit of targets (`target_limit`), if the trigger already has its maximum of HTTP
   request actions (`http_action_limit`) or if the status is 500 or above (`call_failed`).
-- Only HTTP requests are counted: neither the limit of message actions per trigger, nor the limit of
-  reactions per instance, nor the other actions of a discarded execution.
+- Only HTTP requests are counted: neither the limit of message actions per trigger, nor the other actions of
+  a discarded execution. The executions that are not counted because of the limit of reactions per instance
+  have a metric of their own, see [How it works](how-it-works.md#metrics).
 
 ## Known limits
 
@@ -344,7 +346,7 @@ If the service has a `MeterRegistry`, two counters are published. Neither carrie
 | Calls while an incoming HTTP request is handled | The request is the trigger of these calls, see [HTTP requests as triggers](http-triggers.md). If the request is handled asynchronously or is not observed for another reason, the calls are outside of a trigger and become action-only reactions |
 | Conditional calls without header | Every conditional coarse action splits a reaction into variants; k independent ones yield up to 2^k reactions. A 401 of a provider that otherwise delivers the header yields a rare reaction with a coarse action |
 | A target names many different operations, for example because its paths are not templated (`GET /api/partners/4711`) | The names are accepted up to the limits of operation names, each as an action of its own. Combined with the triggers that call the target and with each other they can still make up more reactions than the 4096 an instance identifies |
-| Calls to a varying selection of targets (for example webhooks per subscriber) | Each selection is a reaction of its own. Once an instance has identified 4096 reactions, it identifies no new ones - of messages neither - until it restarts; logged once as a warning |
+| Calls to a varying selection of targets (for example webhooks per subscriber) | Each selection is a reaction of its own. Once an instance has identified 4096 reactions, it neither identifies nor counts further ones - of messages neither - until it identifies its reactions again (`jeap.reaction.observer.reidentification-period`, 24 hours by default); logged as a warning once per period and visible in the metrics, see [How it works](how-it-works.md#metrics) |
 | Retry within a trigger, first answer without header (status below 500), then with header | The reaction contains the coarse and the fine action |
 | Several providers behind one host without a recognisable context | The coarse action names the host, i.e. the gateway. The providers share the limit of new operation names per target |
 | A target names operations that are not its own | The consumer cannot check the name a target gives its operation: a target can name operations of any component, and they appear in the system behaviour documentation as called by the service. Their number is limited, see [Limits of the observation](#limits-of-the-observation) |
@@ -364,9 +366,10 @@ If the service has a `MeterRegistry`, two counters are published. Neither carrie
 - The idempotence id of `ReactionIdentifiedEvent` is
   `ri_<service>_<serviceInstanceIdentifier>_<reactionId>_v<reactionModelVersion>_<identificationStart>`. The
   service instance identifier is a UUID generated at the start of the instance, the same as in the idempotence
-  id of `ReactionsObservedEvent`. The identification start is the time at which the instance began to report
-  its reactions, in UTC (`20261026T041233Z`); currently that is the start of the instance. The id identifies
-  one report: a service reports the same reaction once per instance, again after a restart, and with another
+  id of `ReactionsObservedEvent`. The identification start is the start of the identification period the
+  instance identified the reaction in, in UTC (`20261026T041233Z`); the first period starts with the instance,
+  see [Reidentification](how-it-works.md#reidentification). The id identifies one report: a service reports
+  the same reaction once per instance and identification period, again after a restart, and with another
   model version after an upgrade or a rollback, each time with an id of its own. A consumer processing the
   events idempotently processes each of these reports once.
 

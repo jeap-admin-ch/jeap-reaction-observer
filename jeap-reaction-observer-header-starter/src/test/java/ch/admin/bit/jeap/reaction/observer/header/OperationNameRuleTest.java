@@ -38,8 +38,8 @@ class OperationNameRuleTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"‌", "​", "‮", "﻿", "\n", "\t", "\u0000", "\u0085", " ", " ",
-            "󠀁"})
+    @ValueSource(strings = {"\u200C", "\u200B", "\u202E", "\uFEFF", "\n", "\t", "\u0000", "\u0085", "\u2028", "\u2029",
+            "\uDB40\uDC01"})
     void violation_nameWithAControlOrInvisibleCharacter_invisibleCharacter(String character) {
         assertThat(OperationNameRule.violation("svc GET /api/zero" + character + "width"))
                 .contains("contains a control character, a line or paragraph separator or an invisible format character");
@@ -48,8 +48,8 @@ class OperationNameRuleTest {
     @ParameterizedTest
     @CsvSource(delimiter = '|', value = {
             "' svc GET /x'|svc GET /x",
-            "'svc GET /x '|svc GET /x",
-            "' svc GET /x '|svc GET /x",
+            "'svc GET /x\u00A0'|svc GET /x",
+            "'\u2003svc GET /x\u202F'|svc GET /x",
             "'svc GET /x\t'|'svc GET /x\t'",
             "'   '|''"})
     void stripSpaces_dropsTheSpaceSeparatorsAtTheEdgesOnly(String name, String expected) {
@@ -58,7 +58,7 @@ class OperationNameRuleTest {
 
     @Test
     void escapeForLog_replacesControlAndInvisibleCharactersByTheirCodePoints() {
-        assertThat(OperationNameRule.escapeForLog("svc GET /a‌b\nc‮d󠀁 café"))
+        assertThat(OperationNameRule.escapeForLog("svc GET /a\u200Cb\nc\u202Ed\uDB40\uDC01 café"))
                 .isEqualTo("svc GET /a[U+200C]b[U+000A]c[U+202E]d[U+E0001] café");
     }
 }

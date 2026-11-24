@@ -1,7 +1,9 @@
 package ch.admin.bit.jeap.reaction.observer.http;
 
+import ch.admin.bit.jeap.reaction.observer.core.domain.ReactionObserverMetrics;
 import ch.admin.bit.jeap.reaction.observer.core.domain.ReactionObserverService;
 import ch.admin.bit.jeap.reaction.observer.core.domain.ReactionRecorder;
+import ch.admin.bit.jeap.reaction.observer.core.domain.listener.ReactionIdentifiedListener;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.ReactionModel;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -29,6 +31,7 @@ import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -460,14 +463,16 @@ class ReactionObservingClientHttpRequestInterceptorTest {
     void blockingReportOfTheIdentification_doesNotDelayTheCallOutsideOfATrigger() throws InterruptedException {
         CountDownLatch reported = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
-        try (ReactionObserverService blockingService = new ReactionObserverService(reaction -> {
+        ReactionIdentifiedListener blockingListener = (reaction, identificationStart) -> {
             reported.countDown();
             try {
                 release.await();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-        })) {
+        };
+        try (ReactionObserverService blockingService = new ReactionObserverService(blockingListener,
+                ReactionObserverService.DEFAULT_REIDENTIFICATION_PERIOD, Clock.systemUTC(), ReactionObserverMetrics.NONE)) {
             ReactionRecorder recorder = new ReactionRecorder(blockingService);
             HttpActionObserver blockingObserver = new HttpActionObserver(() -> recorder, new HttpTargetNaming(false),
                     new HttpTargetRegistry(MAX_TARGET_COUNT), unlimitedOperations(), HttpObservationMetrics.NONE, LOG_INTERVAL);

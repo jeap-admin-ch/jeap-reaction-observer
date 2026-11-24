@@ -15,17 +15,17 @@ public class ReactionObserverKafkaConfigProperties {
     private String reactionsObservedTopic;
 
     /**
-     * Defaults to every five minutes in {@link ch.admin.bit.jeap.reaction.observer.events.scheduler.ReactionsObservedEventScheduler}
+     * The interval in seconds at which the
+     * {@link ch.admin.bit.jeap.reaction.observer.events.scheduler.ReactionsObservedEventScheduler} publishes the
+     * counts, five minutes by default. At least 1: the publication of the counts cannot be switched off.
+     * Intervals of seconds only make sense in tests and demos: in operation, choose minutes.
      */
     private int observedEventRateSeconds = 300;
 
-    public boolean isObservedEventSchedulingEnabled() {
-        return observedEventRateSeconds > 0;
-    }
-
     /**
      * The topics are required whenever these properties exist. They only exist in an active Reaction Observer:
-     * the auto-configuration that enables them carries the condition on the switch.
+     * the auto-configuration that enables them carries the condition on the switch. An interval of less than a
+     * second fails the start here, with the name of the property: the scheduler would fail it later, without.
      */
     @PostConstruct
     public void validate() {
@@ -34,6 +34,10 @@ public class ReactionObserverKafkaConfigProperties {
         }
         if (reactionsObservedTopic == null || reactionsObservedTopic.isEmpty()) {
             throw new IllegalArgumentException("jeap.reaction.observer.events.reactions-observed-topic must not be empty");
+        }
+        if (observedEventRateSeconds < 1) {
+            throw new IllegalArgumentException("jeap.reaction.observer.events.observed-event-rate-seconds must be at least 1, but is " +
+                    observedEventRateSeconds);
         }
     }
 }

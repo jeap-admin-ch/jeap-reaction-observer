@@ -1,6 +1,8 @@
 package ch.admin.bit.jeap.reaction.observer.events.spring;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -36,6 +38,24 @@ class ReactionObserverKafkaConfigPropertiesTest {
         properties.setReactionsObservedTopic("reactions-observed");
 
         assertThatCode(properties::validate).doesNotThrowAnyException();
+    }
+
+    /**
+     * The publication of the counts cannot be switched off. An interval of less than a second used to fail the
+     * start of the service as well, but in the scheduler and without the name of the property.
+     */
+    @ParameterizedTest
+    @ValueSource(ints = {0, -1})
+    void validate_intervalOfLessThanASecond_throws(int observedEventRateSeconds) {
+        ReactionObserverKafkaConfigProperties properties = new ReactionObserverKafkaConfigProperties();
+        properties.setReactionIdentifiedTopic("reaction-identified");
+        properties.setReactionsObservedTopic("reactions-observed");
+        properties.setObservedEventRateSeconds(observedEventRateSeconds);
+
+        assertThatThrownBy(properties::validate)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("jeap.reaction.observer.events.observed-event-rate-seconds must be at least 1, but is " +
+                        observedEventRateSeconds);
     }
 
     /**

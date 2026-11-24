@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [11.40.0] - 2026-11-25
+
+### Added
+- Reidentification: an instance identifies its reactions again every
+  `jeap.reaction.observer.reidentification-period` (24 hours by default, at least 2 seconds and at most
+  7 days; the first period of an instance lasts a random 50 to 100 percent of it). An identification that
+  never reached the Reaction Observer Service is thereby made up for after one period at the latest, not only
+  when the instance restarts.
+  Each identification is a message with an idempotence id of its own. Always active, whatever the reaction
+  model version, and without a new version of the Reaction Observer Service. See
+  [docs/how-it-works.md](docs/how-it-works.md#reidentification)
+- Metrics, if the service has a `MeterRegistry`: `jeap_reaction_observer_identified_reactions` (the reactions
+  identified in the current period) and `jeap_reaction_observer_dropped_executions_total` (the executions
+  the observer dropped, by `reason`). See [docs/how-it-works.md](docs/how-it-works.md#metrics)
+
+### Changed
+- Only the executions of identified reactions are counted. An instance that had reached its limit of 4096
+  reactions used to count the executions of further reactions without identifying them, and the Reaction
+  Observer Service skipped these counts. Such executions are not reported any more and show in the new
+  metric instead. The limit holds per identification period, not until the instance restarts, and its warning
+  is logged once per period
+- A `ReactionsObservedEvent` still reports the counts of at most 4096 distinct reactions. What happens when
+  this limit is reached has changed:
+  - Before: nothing was counted any more until the next event, not even reactions that already had a count.
+  - Now: reactions that already have a count keep being counted. Only the executions of further reactions
+    are dropped until the next event, and show in the new metric as `count_limit`.
+
+  Only an instance that observes more than 4096 distinct reactions can reach the limit, see
+  [docs/how-it-works.md](docs/how-it-works.md#more-than-4096-distinct-reactions)
+- The execution that finds the identification of its reaction rejected at the hand-over for publication
+  (queue full, or the service is shutting down) is not counted any more, and shows in the new metric as
+  `not_identified`. If another thread observes the same reaction just before the hand-over is rejected, its
+  execution has already been counted and stays counted
+- `ReactionIdentifiedListener.onReactionIdentified` has a second parameter, the identification start. The
+  interface is an internal one between the modules of this library, not an extension point, and is documented
+  as such now. An implementation outside of this library has to be adapted
+- `jeap.reaction.observer.events.observed-event-rate-seconds` has to be at least 1, a smaller value fails the
+  start of the service with a message that names the property. The publication of the counts cannot be
+  switched off: the documentation said that a value `<= 0` disables it, but such a service did not start
+- The constructor `ReactionObserverService(ReactionIdentifiedListener)` is removed. A service gets its
+  `ReactionObserverService` from the starter; code that creates one itself passes the reidentification period,
+  a clock and the metrics as well
+
 ## [11.39.0] - 2026-11-24
 
 ### Added

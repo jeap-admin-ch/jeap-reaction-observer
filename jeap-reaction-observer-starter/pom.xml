@@ -7,7 +7,7 @@
     <parent>
         <groupId>ch.admin.bit.jeap</groupId>
         <artifactId>jeap-reaction-observer</artifactId>
-        <version>11.39.0-SNAPSHOT</version>
+        <version>11.40.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>jeap-reaction-observer-starter</artifactId>
@@ -31,10 +31,22 @@
             <groupId>ch.admin.bit.jeap</groupId>
             <artifactId>jeap-reaction-observer-configuration</artifactId>
         </dependency>
+        <!-- The metrics are optional: they are only registered if the service has a MeterRegistry. -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+            <optional>true</optional>
+        </dependency>
 
         <dependency>
             <groupId>ch.admin.bit.jeap</groupId>
             <artifactId>jeap-reaction-observer-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- A meter registry as a service has it: with Micrometer on the classpath, jEAP Messaging requires one -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
             <scope>test</scope>
         </dependency>
         <!-- Spring MVC for the tests of incoming HTTP requests as triggers; the library itself does not bring it -->

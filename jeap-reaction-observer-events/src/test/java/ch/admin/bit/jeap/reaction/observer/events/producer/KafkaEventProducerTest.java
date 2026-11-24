@@ -7,6 +7,7 @@ import ch.admin.bit.jeap.reaction.observer.core.domain.model.ObservationType;
 import ch.admin.bit.jeap.reaction.observer.core.domain.model.Reaction;
 import ch.admin.bit.jeap.reaction.observer.event.identified.v2.ReactionIdentifiedEvent;
 import ch.admin.bit.jeap.reaction.observer.test.ReactionEventsTestConsumer;
+import ch.admin.bit.jeap.reaction.observer.test.ReactionIdentifiedEvents;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -15,11 +16,13 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 @SpringBootTest
 class KafkaEventProducerTest extends KafkaIntegrationTestBase {
@@ -37,7 +40,7 @@ class KafkaEventProducerTest extends KafkaIntegrationTestBase {
         Observation action = new Observation(ObservationType.COMMAND, "com.test.MyCommand", new TreeMap<>());
         Reaction reaction = new Reaction(trigger, List.of(action));
 
-        kafkaEventProducer.onReactionIdentified(reaction);
+        kafkaEventProducer.onReactionIdentified(reaction, Instant.parse("2026-11-24T10:00:00Z"));
 
         ReactionIdentifiedEvent event = testConsumer.awaitReactionIdentifiedEventForReactionId(reaction.id());
         assertThat(event.getPayload().getReaction())
@@ -62,6 +65,27 @@ class KafkaEventProducerTest extends KafkaIntegrationTestBase {
                 .isEqualTo(action.fqn());
         assertThat(reactionOnEvent.getActions().getFirst().getProps())
                 .isEmpty();
+    }
+
+    @Test
+    void reportsOfTwoIdentificationPeriods_haveIdempotenceIdsOfTheirOwn() {
+        Reaction reaction = new Reaction(new Observation(ObservationType.EVENT, "com.test.ReidentifiedEvent", new TreeMap<>()), null);
+        Instant firstIdentificationStart = Instant.parse("2026-11-24T10:00:00.900Z");
+
+        kafkaEventProducer.onReactionIdentified(reaction, firstIdentificationStart);
+        kafkaEventProducer.onReactionIdentified(reaction, firstIdentificationStart.plusSeconds(1));
+
+        await().untilAsserted(() -> assertThat(idempotenceIdsOfReportsOf(reaction))
+                .hasSize(2)
+                .anySatisfy(idempotenceId -> assertThat(idempotenceId).endsWith(reaction.id() + "_v1_20261124T100000Z"))
+                .anySatisfy(idempotenceId -> assertThat(idempotenceId).endsWith(reaction.id() + "_v1_20261124T100001Z")));
+    }
+
+    private List<String> idempotenceIdsOfReportsOf(Reaction reaction) {
+        return testConsumer.getReactionIdentifiedEvents().entrySet().stream()
+                .filter(report -> ReactionIdentifiedEvents.reactionId(report.getValue()).equals(reaction.id()))
+                .map(Map.Entry::getKey)
+                .toList();
     }
 
     @TestConfiguration
