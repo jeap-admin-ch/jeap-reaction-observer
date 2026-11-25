@@ -110,7 +110,7 @@ class ReactionObserverHeaderAutoConfigurationTest {
         return resolver.resolve(request, handler);
     }
 
-    private void assertNoHeaderBeans(ApplicationContextAssertProvider<?> context) {
+    private void assertNoHeaderBeans(ApplicationContextAssertProvider<?, ?> context) {
         assertThat(context).doesNotHaveBean(ReactionObservationHeaderInterceptor.class);
         assertThat(context).doesNotHaveBean(OperationNameResolver.class);
         assertThat(context).doesNotHaveBean("jeapReactionObserverHeaderProtectionFilter");
