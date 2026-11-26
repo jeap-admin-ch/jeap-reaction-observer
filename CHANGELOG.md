@@ -10,6 +10,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - Update parent from 11.17.0 to 12.0.0
+- Requests with the `QUERY` method, a standard method since Spring Framework 7.1, are named and observed like
+  requests with the other standard methods: they get a `JEAP-REACTION-OBSERVATION` header and are observed as
+  triggers. Versions 11.39.0 to 11.40.x treat them like requests with another method, see
+  [docs/response-header.md](docs/response-header.md#contract)
 
 ## [11.40.0] - 2026-11-25
 

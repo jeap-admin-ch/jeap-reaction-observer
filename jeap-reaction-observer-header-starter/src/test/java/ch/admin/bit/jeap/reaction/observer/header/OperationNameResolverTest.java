@@ -272,7 +272,7 @@ class OperationNameResolverTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE"})
+    @ValueSource(strings = {"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE", "QUERY"})
     void resolve_standardMethod_isObserved(String method) throws Exception {
         HttpServletRequest request = requestWithPattern(method, "/api/items");
         HandlerMethod handler = handlerMethodOf(new SampleController(), "getItem");
@@ -285,7 +285,7 @@ class OperationNameResolverTest {
      * unbounded number of operations out of one mapping; they are not named, and not warned about either.
      */
     @ParameterizedTest
-    @ValueSource(strings = {"FOO", "PROPFIND", "M-SEARCH", "QUERY", "GETX"})
+    @ValueSource(strings = {"FOO", "PROPFIND", "M-SEARCH", "GETX"})
     void resolve_otherMethod_isNotObserved_notWarnedAbout(String method, CapturedOutput output) throws Exception {
         HttpServletRequest request = requestWithPattern(method, "/api/items");
         HandlerMethod handler = handlerMethodOf(new SampleController(), "getItem");

@@ -21,14 +21,14 @@ even services that do not otherwise use this library (mode "header only").
 The wire format (request signal and value format) is **frozen** from the first released version: providers
 running an old header module stay in service for a long time, so it cannot change compatibly afterwards.
 
-The [operation-naming rule](#operation-name-fqn) is stable too, but version 11.39.0 narrowed it. Callers see
-both rules side by side while providers are upgraded:
+The [operation-naming rule](#operation-name-fqn) is stable too, but version 11.39.0 narrowed it, and 11.41.0
+named `QUERY` again. Callers see the rules side by side while providers are upgraded:
 
 | Change in 11.39.0 | Effect on callers while provider versions are mixed |
 |---|---|
 | Spaces at the start and end of a name are dropped | None: callers already drop them from the name they read |
 | An operation whose name a caller does not accept is not named | None: callers already rejected such a header value |
-| Only the exact standard methods are named (`GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`, `TRACE`, case-sensitive) | A call with another method - an extension method such as WebDAV `PROPFIND`, or a standard method in another case such as `post` - is a fine action with an older provider, and a call without the header with a provider of 11.39.0 or later: a coarse action for a status below 500, a failed call for a status of 500 or above. An annotated controller can declare only the standard methods, so such calls reach only mappings without a method condition and functional endpoints with a predicate for another method |
+| Only the exact standard methods are named (`GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`, `TRACE`, from 11.41.0 on also `QUERY`, case-sensitive) | A call with another method - an extension method such as WebDAV `PROPFIND`, or a standard method in another case such as `post` - is a fine action with an older provider, and a call without the header with a provider of 11.39.0 or later: a coarse action for a status below 500, a failed call for a status of 500 or above. A `QUERY` call is a fine action with a provider up to 11.38.x or of 11.41.0 or later, which builds on Spring Framework 7.1, the first version that knows `QUERY`; a provider of 11.39.0 to 11.40.x treats it like another method. An annotated controller can declare only the standard methods, so such calls reach only mappings without a method condition and functional endpoints with a predicate for another method |
 
 ### Value format
 
@@ -68,7 +68,7 @@ fqn = "<provider> <METHOD> <pattern>[ ;v=<apiVersion>]"
 | Part | Rule |
 |---|---|
 | `<provider>` | `jeap.rest.tracing.application-name` (relaxed binding, so it matches `JEAP-APPLICATION-NAME`), falling back to `spring.application.name`. Blank or unresolvable values (e.g. `${spring.application.name}` without an application name) count as not set. A name of spaces only counts as not set. If neither is set, a warning is logged at startup and no operation name is produced; startup never fails |
-| `<METHOD>` | HTTP method as sent. Only the standard methods Spring knows are named, compared exactly (methods are case-sensitive): `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`, `TRACE`. A mapping without a method condition accepts any method a client sends; a request with another method, also `post` or another case of a standard method, gets no header, so that made-up methods cannot make an unbounded number of operations out of one mapping. Up to 11.38.x the method was uppercased and every method was named, see [Contract](#contract) |
+| `<METHOD>` | HTTP method as sent. Only the standard methods Spring knows are named, compared exactly (methods are case-sensitive): `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`, `TRACE`, `QUERY`. `QUERY` is named from 11.41.0 on, which builds on Spring Framework 7.1, the first version that knows it; 11.39.0 to 11.40.x treat a `QUERY` request like a request with another method. A mapping without a method condition accepts any method a client sends; a request with another method, also `post` or another case of a standard method, gets no header, so that made-up methods cannot make an unbounded number of operations out of one mapping. Up to 11.38.x the method was uppercased and every method was named, see [Contract](#contract) |
 | `<pattern>` | `HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE`, relative to the context path and the `DispatcherServlet` mapping |
 | Normalisation | `{name}` and `{name:regex}` → `{}`; `{*name}` → `{*}`; a trailing `/` is dropped, except for `/` itself |
 | `;v=<apiVersion>` | The declared `@RequestMapping(version = ...)` value (including composed annotations such as `@GetMapping` and inherited/interface mappings). A non-empty method version overrides the class version. The value is preserved verbatim, including `+` for baselines; omitted for unversioned mappings and all functional WebMvc.fn endpoints |
