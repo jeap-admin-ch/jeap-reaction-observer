@@ -8,12 +8,17 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [11.41.0] - 2026-11-25
 
 ### Changed
-
 - Update parent from 11.17.0 to 12.0.0
 - Requests with the `QUERY` method, a standard method since Spring Framework 7.1, are named and observed like
   requests with the other standard methods: they get a `JEAP-REACTION-OBSERVATION` header and are observed as
   triggers. Versions 11.39.0 to 11.40.x treat them like requests with another method, see
   [docs/response-header.md](docs/response-header.md#contract)
+- update jeap-spring-boot-starters from 25.34.0 to 25.35.0
+- Application starter: adapt the reverse proxy defaults to Spring Boot 4.2. The forwarded header strategy now
+  defaults to `server.request.header.forwarded.strategy=web-server` (replacing the deprecated
+  `server.forward-headers-strategy=NATIVE`), and only if the application sets neither of the two properties itself,
+  so an application's own setting of either property is respected (Spring Boot refuses to start if both are set).
+  The `server.tomcat.use-relative-redirects=true` default was dropped, as Spring Boot defaults to relative redirects.
 
 ## [11.40.0] - 2026-11-25
 
